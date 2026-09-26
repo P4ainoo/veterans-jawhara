@@ -17,6 +17,10 @@
         "position": { "type": "string", "enum": ["GK", "DEF", "MID", "FWD"] },
         "avgRating": { "type": "number" },
         "matchCount": { "type": "integer" },
+        "goals": { "type": "integer" },
+        "assists": { "type": "integer" },
+        "yellowCards": { "type": "integer" },
+        "redCards": { "type": "integer" },
         "isOnboarded": { "type": "boolean" }
       },
       "required": ["uid", "email", "firstName", "lastName", "role", "avatarUrl", "birthDate", "phoneNumber"]
@@ -36,6 +40,8 @@
         "pitchAssignments": { "type": "object", "description": "slotId to userId mapping" },
         "benchAssignments": { "type": "array", "description": "list of userIds" },
         "isCompleted": { "type": "boolean" },
+        "isPublished": { "type": "boolean" },
+        "matchStats": { "type": "object", "description": "userId to stats mapping" },
         "createdBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },

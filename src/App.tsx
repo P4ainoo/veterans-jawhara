@@ -367,16 +367,28 @@ export default function App() {
                                <button 
                                 onClick={async () => {
                                   const dPlayers = [
-                                    { uid: 'd1', firstName: 'Mehdi', lastName: 'SASSI', jerseyNumber: 10, avgRating: 9.2, goals: 5, assists: 3, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mehdi' },
-                                    { uid: 'd2', firstName: 'Zied', lastName: 'JAZIRI', jerseyNumber: 11, avgRating: 8.5, goals: 3, assists: 2, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zied' }
+                                    { uid: 'd1', firstName: 'Mehdi', lastName: 'SASSI', jerseyNumber: 10, avgRating: 9.2, matchCount: 15, goals: 12, assists: 8, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mehdi' },
+                                    { uid: 'd2', firstName: 'Zied', lastName: 'JAZIRI', jerseyNumber: 11, avgRating: 8.5, matchCount: 14, goals: 8, assists: 4, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zied' },
+                                    { uid: 'mock-leader', firstName: 'Coach', lastName: 'LOUAY', jerseyNumber: 1, avgRating: 7.5, matchCount: 1, goals: 0, assists: 0, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Coach' }
                                   ];
                                   for(const p of dPlayers) await setDoc(doc(db, 'users', p.uid), { ...p, role: 'PLAYER', isOnboarded: true });
                                   const mId = 'demo-match';
                                   await setDoc(doc(db, 'events', mId), {
                                     id: mId, type: 'MATCH', opponent: 'ÉTOILE VETERANS', date: '2026-09-25', time: '20:30', venue: 'Sousse', isCompleted: true, isPublished: true, formation: '3-2-1',
-                                    pitchAssignments: { 'p1': 'd1', 'p2': 'd2', 'gk': currentUser?.uid },
-                                    matchStats: { 'd1': { goals: 2, assists: 0, rating: 9.4 }, 'd2': { goals: 0, assists: 2, rating: 8.8 }, [currentUser?.uid||'']: { goals: 0, assists: 0, rating: 7.5 } }
+                                    pitchAssignments: { 
+                                      'slot-0-0': 'd1', 
+                                      'slot-1-0': 'd2', 
+                                      'slot-2-1': 'mock-leader',
+                                      'gk': currentUser?.uid 
+                                    },
+                                    matchStats: { 
+                                      'd1': { goals: 2, assists: 0, rating: 9.4 }, 
+                                      'd2': { goals: 0, assists: 2, rating: 8.8 }, 
+                                      'mock-leader': { goals: 0, assists: 0, rating: 7.2 },
+                                      [currentUser?.uid||'']: { goals: 0, assists: 0, rating: 7.5 } 
+                                    }
                                   });
+                                  setActiveEvent(mId);
                                   alert('Tactical Demo Deployed!');
                                 }}
                                 className="w-full h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 font-black text-[9px] uppercase tracking-[0.2em] mb-4"
