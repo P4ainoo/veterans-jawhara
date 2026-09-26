@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #00ff66;
+  --color-primary-soft: rgba(0, 255, 102, 0.1);
+  --color-secondary: #00e5ff;
+  --color-tertiary: #ffba20;
+  --color-surface: #090a0f;
+  --color-surface-raised: #12141d;
+  --color-surface-highest: #1e2029;
+  --color-border-soft: rgba(255, 255, 255, 0.05);
+  
+  --font-headline: "Syne", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --shadow-elite: 0 0 20px rgba(0, 255, 102, 0.1);
+  --shadow-elite-hover: 0 0 40px rgba(0, 255, 102, 0.2);
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-white font-body antialiased selection:bg-primary selection:text-black;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .font-headline {
+    font-family: var(--font-headline);
+    @apply italic uppercase tracking-tighter leading-none;
+  }
+  
+  .glass-card {
+    @apply bg-surface-raised/80 backdrop-blur-xl border border-border-soft;
+  }
+  
+  .btn-elite {
+    @apply h-14 px-8 rounded-2xl bg-primary text-black font-headline text-lg 
+           flex items-center justify-center gap-2 transition-all 
+           hover:shadow-elite-hover active:scale-[0.98] disabled:opacity-50
+           disabled:pointer-events-none;
+  }
+  
+  .btn-ghost {
+    @apply h-14 px-8 rounded-2xl bg-white/5 border border-white/10 
+           text-white font-headline text-sm flex items-center justify-center 
+           gap-2 transition-all hover:bg-white/10 active:scale-[0.98];
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isCoach() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'COACH';
+    }
+
+    // User profiles
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && (request.auth.uid == uid || isCoach());
+    }
+
+    // Events and their subcollections
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isCoach();
+      allow update: if isSignedIn() && isCoach();
+      allow delete: if isSignedIn() && isCoach();
+      
+      // RSVPs subcollection
+      match /rsvps/{userId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && (request.auth.uid == userId || isCoach());
+      }
+      
+      // Ratings subcollection
+      match /ratings/{userId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && isCoach();
+      }
+    }
+  }
+}
