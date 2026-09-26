@@ -11,7 +11,7 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'jawhara_crest_1790419338393.jpg'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-512.jpg'],
         manifest: {
           id: '/',
           name: 'VETERANS JAWHARA',
@@ -24,13 +24,13 @@ export default defineConfig(() => {
           scope: '/',
           icons: [
             {
-              src: '/src/assets/images/jawhara_crest_1790419338393.jpg',
+              src: '/icon-512.jpg',
               sizes: '512x512',
               type: 'image/jpeg',
               purpose: 'any'
             },
             {
-              src: '/src/assets/images/jawhara_crest_1790419338393.jpg',
+              src: '/icon-512.jpg',
               sizes: '512x512',
               type: 'image/jpeg',
               purpose: 'maskable'

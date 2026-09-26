@@ -86,16 +86,14 @@ export const PWAInstallButton: React.FC = () => {
     );
   }
 
-  // Fallback link if nothing else works (optional, but good for user request "vercel app")
+  // Fallback if PWA is not auto-detectable but likely supported (like Desktop Chrome without prompt yet)
   return (
-    <a
-      href="https://ais-pre-ur6q3w4h4ow7n2p7g4zzuz-51859785583.europe-west1.run.app"
-      target="_blank"
-      rel="noopener noreferrer"
+    <button
+      onClick={() => alert("To install this app, please use the 'Install' icon in your browser's address bar or the 'Add to Home Screen' option in your browser menu.")}
       className="w-full h-14 rounded-2xl bg-white/5 text-white/40 border border-white/5 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-headline text-sm uppercase tracking-widest"
     >
-      <ExternalLink size={18} />
-      Open Deployment
-    </a>
+      <Smartphone size={18} />
+      Installation Manual
+    </button>
   );
 };
