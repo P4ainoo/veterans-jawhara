@@ -8,9 +8,10 @@ interface PlayerCardProps {
   player: UserProfile;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  matchRating?: number;
 }
 
-export const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', className }) => {
+export const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', className, matchRating }) => {
   const isGold = (player.avgRating || 0) >= 9.0;
   const isPurple = (player.avgRating || 0) >= 8.5 && (player.avgRating || 0) < 9.0;
 
@@ -23,6 +24,18 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', cla
       "hover:scale-[1.03] active:scale-95 shadow-2xl",
       className
     )}>
+      {/* Match Rating Badge (Flashscore Style) */}
+      {matchRating !== undefined && size === 'sm' && (
+        <div className={cn(
+          "absolute top-1 right-1 z-50 px-1.5 py-0.5 rounded-lg text-[10px] font-black text-white shadow-lg border border-white/20",
+          matchRating >= 8.5 ? "bg-secondary" : 
+          matchRating >= 7.0 ? "bg-primary" : 
+          "bg-orange-500"
+        )}>
+          {matchRating.toFixed(1)}
+        </div>
+      )}
+
       {/* Glossy Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none opacity-20 z-20 group-hover:opacity-30 transition-opacity" />
       

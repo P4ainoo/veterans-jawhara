@@ -18,9 +18,16 @@ import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 interface PitchCanvasProps {
   eventId: string;
   readOnly?: boolean;
+  matchStats?: Record<string, {
+    goals: number;
+    assists: number;
+    yellowCards: number;
+    redCards: number;
+    rating: number;
+  }>;
 }
 
-export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = false }) => {
+export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = false, matchStats }) => {
   const { events, roster } = useSquadStore();
   const event = events.find(e => e.id === eventId);
   const formation = event?.formation || '3-2-1';
@@ -138,14 +145,21 @@ export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = fa
           </div>
 
           <div className="relative z-10 w-full h-full p-8">
-            {slots.map(slot => (
-              <PitchSlot 
-                key={slot.id} 
-                slot={slot} 
-                assignedUser={roster.find(u => u.uid === pitchAssignments[slot.id])}
-                readOnly={readOnly}
-              />
-            ))}
+            {slots.map(slot => {
+              const userId = pitchAssignments[slot.id];
+              const player = roster.find(u => u.uid === userId);
+              const stats = userId && matchStats ? matchStats[userId] : undefined;
+              
+              return (
+                <PitchSlot 
+                  key={slot.id} 
+                  slot={slot} 
+                  assignedUser={player}
+                  readOnly={readOnly}
+                  matchRating={stats?.rating}
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -158,6 +172,7 @@ export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = fa
            <BenchContainer 
             players={roster.filter(u => benchAssignments.includes(u.uid))}
             readOnly={readOnly}
+            matchStats={matchStats}
            />
            
            {!readOnly && (
@@ -232,7 +247,7 @@ function RosterDrawer({ players, rsvpCount }: { players: UserProfile[], rsvpCoun
   );
 }
 
-function PitchSlot({ slot, assignedUser, readOnly }: { slot: any, assignedUser?: UserProfile, readOnly: boolean }) {
+function PitchSlot({ slot, assignedUser, readOnly, matchRating }: { slot: any, assignedUser?: UserProfile, readOnly: boolean, matchRating?: number }) {
   const { isOver, setNodeRef } = useDroppable({
     id: slot.id,
     disabled: readOnly
@@ -252,7 +267,7 @@ function PitchSlot({ slot, assignedUser, readOnly }: { slot: any, assignedUser?:
         assignedUser ? "border-transparent" : "bg-black/20"
       )}>
         {assignedUser ? (
-          <DraggablePlayer user={assignedUser} readOnly={readOnly} />
+          <DraggablePlayer user={assignedUser} readOnly={readOnly} matchRating={matchRating} />
         ) : (
           <span className="text-[8px] font-bold text-white/20 uppercase">{slot.label}</span>
         )}
@@ -262,7 +277,7 @@ function PitchSlot({ slot, assignedUser, readOnly }: { slot: any, assignedUser?:
   );
 }
 
-function BenchContainer({ players, readOnly }: { players: UserProfile[], readOnly: boolean }) {
+function BenchContainer({ players, readOnly, matchStats }: { players: UserProfile[], readOnly: boolean, matchStats?: Record<string, any> }) {
   const { isOver, setNodeRef } = useDroppable({
     id: 'bench-container',
     disabled: readOnly
@@ -283,14 +298,14 @@ function BenchContainer({ players, readOnly }: { players: UserProfile[], readOnl
         </div>
       ) : (
         players.map((p) => (
-          <DraggablePlayer key={p.uid} user={p} readOnly={readOnly} />
+          <DraggablePlayer key={p.uid} user={p} readOnly={readOnly} matchRating={matchStats?.[p.uid]?.rating} />
         ))
       )}
     </div>
   );
 }
 
-function DraggablePlayer({ user, readOnly = false }: { user: UserProfile, readOnly?: boolean }) {
+function DraggablePlayer({ user, readOnly = false, matchRating }: { user: UserProfile, readOnly?: boolean, matchRating?: number }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: user.uid,
     disabled: readOnly
@@ -310,7 +325,7 @@ function DraggablePlayer({ user, readOnly = false }: { user: UserProfile, readOn
         !readOnly && "cursor-grab active:cursor-grabbing hover:scale-105"
       )}
     >
-      <PlayerCard player={user} size="sm" />
+      <PlayerCard player={user} size="sm" matchRating={matchRating} />
     </div>
   );
 }

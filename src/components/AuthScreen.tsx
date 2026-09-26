@@ -114,6 +114,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("File too large. Max 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setFormData({ ...formData, avatarUrl: base64String });
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Cinematic Background */}
@@ -192,21 +209,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                    >
                       <div className="space-y-6">
                          <div className="flex flex-col items-center gap-4 mb-2">
-                            <div className="relative group cursor-pointer" onClick={() => {
-                              const seed = Math.random().toString(36).substring(7);
-                              setFormData({...formData, avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`});
-                            }}>
-                               <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-primary/30 bg-black/40 group-hover:border-primary transition-all duration-500 shadow-2xl">
-                                  <img src={formData.avatarUrl} className="w-full h-full object-cover" alt="Profile" />
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <Camera size={28} className="text-white" />
+                            <div className="relative group">
+                               <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden" 
+                                  id="avatar-upload"
+                                  onChange={handleAvatarUpload}
+                               />
+                               <label htmlFor="avatar-upload" className="cursor-pointer block">
+                                  <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-primary/30 bg-black/40 group-hover:border-primary transition-all duration-500 shadow-2xl relative">
+                                     <img src={formData.avatarUrl} className="w-full h-full object-cover" alt="Profile" />
+                                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Camera size={28} className="text-white" />
+                                     </div>
                                   </div>
-                               </div>
-                               <div className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black border-4 border-surface-raised shadow-lg">
+                               </label>
+                               <div className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black border-4 border-surface-raised shadow-lg pointer-events-none">
                                   <PlusCircle size={18} />
                                 </div>
                             </div>
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Tap to Randomize Avatar</span>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Upload Tactical Photo</span>
                          </div>
 
                          <div className="space-y-4">

@@ -17,6 +17,10 @@ export interface UserProfile {
   position?: Position;
   avgRating?: number;
   matchCount?: number;
+  goals?: number;
+  assists?: number;
+  yellowCards?: number;
+  redCards?: number;
   isOnboarded?: boolean;
 }
 
@@ -32,6 +36,13 @@ export interface SquadEvent {
   benchAssignments?: string[]; // userIds
   isCompleted: boolean;
   isPublished: boolean;
+  matchStats?: Record<string, {
+    goals: number;
+    assists: number;
+    yellowCards: number;
+    redCards: number;
+    rating: number;
+  }>;
 }
 
 interface SquadState {

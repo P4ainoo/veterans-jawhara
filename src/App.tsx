@@ -16,7 +16,9 @@ import {
   Smartphone,
   Save,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Camera,
+  Footprints
 } from 'lucide-react';
 import { AuthScreen } from './components/AuthScreen';
 import { useSquadStore, SquadEvent, UserProfile } from './store/useSquadStore';
@@ -161,6 +163,23 @@ export default function App() {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("File too large. Maximum size is 2MB for tactical intel.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      await updateProfile({ avatarUrl: base64String });
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="min-h-screen bg-surface text-white font-body selection:bg-primary selection:text-black">
       {/* Top HUD - Compact & Ergonomic */}
@@ -258,6 +277,8 @@ export default function App() {
                                <th className="px-6 py-5">#</th>
                                <th className="px-6 py-5">Operative</th>
                                <th className="px-6 py-5 text-center">Ops</th>
+                               <th className="px-6 py-5 text-center">G</th>
+                               <th className="px-6 py-5 text-center">A</th>
                                <th className="px-6 py-5 text-right">Rating</th>
                             </tr>
                          </thead>
@@ -274,6 +295,8 @@ export default function App() {
                                      </div>
                                   </td>
                                   <td className="px-6 py-5 text-center text-[10px] font-black opacity-40 tabular-nums">{player.matchCount || 0}</td>
+                                  <td className="px-6 py-5 text-center text-[10px] font-black text-[#FFD700] tabular-nums">{player.goals || 0}</td>
+                                  <td className="px-6 py-5 text-center text-[10px] font-black text-[#00E5FF] tabular-nums">{player.assists || 0}</td>
                                   <td className="px-6 py-5 text-right">
                                      <span className="text-sm font-headline text-secondary tabular-nums">{player.avgRating?.toFixed(1) || '0.0'}</span>
                                   </td>
@@ -293,17 +316,18 @@ export default function App() {
                       
                       <div className="flex flex-col md:flex-row gap-10 items-start md:items-center">
                          <div className="flex flex-col items-center gap-4 mx-auto md:mx-0">
-                            <div className="w-44 h-44 rounded-[2.5rem] overflow-hidden border-2 border-primary/30 shadow-2xl relative group bg-surface-highest">
+                             <div className="w-44 h-44 rounded-[2.5rem] overflow-hidden border-2 border-primary/30 shadow-2xl relative group bg-surface-highest">
                                <img src={currentUser.avatarUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Avatar" />
-                               <button 
-                                onClick={() => {
-                                  const seed = Math.random().toString(36).substring(7);
-                                  updateProfile({ avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}` });
-                                }}
-                                className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                               >
-                                  <Settings className="text-white animate-spin" size={32} />
-                               </button>
+                               <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                    onChange={handleAvatarUpload}
+                                  />
+                                  <Camera className="text-white mb-2" size={32} />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Update Intel</span>
+                               </label>
                             </div>
                             <div className="flex flex-col items-center">
                                <span className="text-lg font-headline text-primary">{currentUser.firstName}</span>
@@ -320,22 +344,45 @@ export default function App() {
                                <ProfileField label="Position" value={currentUser.position || '-'} onSave={(v: string) => updateProfile({ position: v as any })} />
                             </div>
 
-                             <div className="pt-6 border-t border-white/5 grid grid-cols-3 gap-3">
+                              <div className="pt-6 border-t border-white/5 grid grid-cols-2 sm:grid-cols-4 gap-3">
                                <div className="bg-white/5 rounded-2xl p-4 text-center">
                                   <span className="block text-[8px] font-black text-white/30 uppercase mb-1">Missions</span>
                                   <span className="text-2xl font-headline text-secondary tabular-nums">{currentUser.matchCount || 0}</span>
                                </div>
                                <div className="bg-white/5 rounded-2xl p-4 text-center">
-                                  <span className="block text-[8px] font-black text-white/30 uppercase mb-1">Performance</span>
+                                  <span className="block text-[8px] font-black text-white/30 uppercase mb-1">Rating</span>
                                   <span className="text-2xl font-headline text-primary tabular-nums">{currentUser.avgRating?.toFixed(1) || '0.0'}</span>
                                </div>
                                <div className="bg-white/5 rounded-2xl p-4 text-center">
-                                  <span className="block text-[8px] font-black text-white/30 uppercase mb-1">Grade</span>
-                                  <span className="text-xs font-black text-white/60 uppercase">OPERATIVE</span>
+                                  <span className="block text-[8px] font-black text-white/30 uppercase mb-1">Goals</span>
+                                  <span className="text-2xl font-headline text-[#FFD700] tabular-nums">{currentUser.goals || 0}</span>
+                               </div>
+                               <div className="bg-white/5 rounded-2xl p-4 text-center">
+                                  <span className="block text-[8px] font-black text-white/30 uppercase mb-1">Assists</span>
+                                  <span className="text-2xl font-headline text-[#00E5FF] tabular-nums">{currentUser.assists || 0}</span>
                                </div>
                             </div>
 
                             <div className="pt-6 border-t border-white/5 space-y-3">
+                               <button 
+                                onClick={async () => {
+                                  const dPlayers = [
+                                    { uid: 'd1', firstName: 'Mehdi', lastName: 'SASSI', jerseyNumber: 10, avgRating: 9.2, goals: 5, assists: 3, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mehdi' },
+                                    { uid: 'd2', firstName: 'Zied', lastName: 'JAZIRI', jerseyNumber: 11, avgRating: 8.5, goals: 3, assists: 2, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zied' }
+                                  ];
+                                  for(const p of dPlayers) await setDoc(doc(db, 'users', p.uid), { ...p, role: 'PLAYER', isOnboarded: true });
+                                  const mId = 'demo-match';
+                                  await setDoc(doc(db, 'events', mId), {
+                                    id: mId, type: 'MATCH', opponent: 'ÉTOILE VETERANS', date: '2026-09-25', time: '20:30', venue: 'Sousse', isCompleted: true, isPublished: true, formation: '3-2-1',
+                                    pitchAssignments: { 'p1': 'd1', 'p2': 'd2', 'gk': currentUser?.uid },
+                                    matchStats: { 'd1': { goals: 2, assists: 0, rating: 9.4 }, 'd2': { goals: 0, assists: 2, rating: 8.8 }, [currentUser?.uid||'']: { goals: 0, assists: 0, rating: 7.5 } }
+                                  });
+                                  alert('Tactical Demo Deployed!');
+                                }}
+                                className="w-full h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 font-black text-[9px] uppercase tracking-[0.2em] mb-4"
+                               >
+                                  Deploy Tactical Demo Data
+                               </button>
                                <button 
                                 onClick={requestPermission}
                                 className={cn(
@@ -404,12 +451,54 @@ export default function App() {
                              </div>
                           </div>
                           <div className="aspect-[4/5] sm:aspect-auto">
-                            <PitchCanvas eventId={activeEventId!} readOnly={currentUser.role !== 'COACH'} />
+                            <PitchCanvas 
+                              eventId={activeEventId!} 
+                              readOnly={currentUser.role !== 'COACH' || activeEvent?.isCompleted} 
+                              matchStats={activeEvent?.matchStats} 
+                            />
                           </div>
                        </div>
                     )}
 
                     <div className="glass-card rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden">
+                        {activeEvent?.isCompleted && activeEvent?.matchStats && (
+                          <div className="glass-card rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden mb-8">
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-6">Match Combat Stats</h4>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {Object.entries(activeEvent.matchStats).map(([uid, stats]: [string, any]) => {
+                                   const player = roster.find(p => p.uid === uid);
+                                   if (!player || (stats.goals === 0 && stats.assists === 0)) return null;
+                                   return (
+                                      <div key={uid} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5">
+                                         <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10">
+                                               <img src={player.avatarUrl} className="w-full h-full object-cover" alt={player.lastName} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                               <span className="text-[10px] font-black uppercase tracking-tight">{player.lastName}</span>
+                                            </div>
+                                         </div>
+                                         <div className="flex items-center gap-3">
+                                            {stats.goals > 0 && (
+                                               <div className="flex items-center gap-1">
+                                                  <Trophy size={12} className="text-[#FFD700]" />
+                                                  <span className="text-[10px] font-black">{stats.goals}</span>
+                                               </div>
+                                            )}
+                                            {stats.assists > 0 && (
+                                               <div className="flex items-center gap-1">
+                                                  <Footprints size={12} className="text-[#00E5FF]" />
+                                                  <span className="text-[10px] font-black">{stats.assists}</span>
+                                               </div>
+                                            )}
+                                         </div>
+                                      </div>
+                                   );
+                                })}
+                             </div>
+                          </div>
+                        )}
+
                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-6">Mission Logistics</h4>
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                           <div className="flex items-center gap-4">
@@ -675,6 +764,15 @@ function EventCreator({ onClose }: { onClose: () => void }) {
         createdAt: new Date().toISOString(),
         createdBy: auth.currentUser?.uid
       });
+      
+      // Notify about new mission
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('NEW SQUAD MISSION', {
+          body: `${formData.type === 'MATCH' ? 'Match vs ' + formData.opponent : 'Training Session'} has been published. Report for duty!`,
+          icon: '/icon-512.jpg'
+        });
+      }
+
       onClose();
     } catch (error) {
       console.error('Event Creation Error:', error);
