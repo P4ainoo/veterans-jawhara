@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { UserProfile, useSquadStore } from '../store/useSquadStore';
+import { PWAInstallButton } from './PWAInstallButton';
 import { auth, db } from '../lib/firebase';
 import { 
   createUserWithEmailAndPassword, 
@@ -165,6 +166,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
         <div className="glass-card rounded-[3rem] p-8 shadow-3xl relative overflow-hidden">
            <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
            
+           <div className="mb-6">
+              <PWAInstallButton />
+           </div>
+
            {error && (
              <motion.div 
                initial={{ opacity: 0, height: 0 }}

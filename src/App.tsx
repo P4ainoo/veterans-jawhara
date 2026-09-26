@@ -335,7 +335,7 @@ export default function App() {
                                </div>
                             </div>
 
-                            <div className="pt-6 border-t border-white/5">
+                            <div className="pt-6 border-t border-white/5 space-y-3">
                                <button 
                                 onClick={requestPermission}
                                 className={cn(
