@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Registered player or coach with full profile details.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "role": { "type": "string", "enum": ["COACH", "PLAYER"] },
+        "jerseyNumber": { "type": "integer", "minimum": 1, "maximum": 99 },
+        "position": { "type": "string", "enum": ["GK", "DEF", "MID", "FWD"] },
+        "avgRating": { "type": "number" },
+        "matchCount": { "type": "integer" },
+        "goals": { "type": "integer" },
+        "assists": { "type": "integer" },
+        "yellowCards": { "type": "integer" },
+        "redCards": { "type": "integer" },
+        "isOnboarded": { "type": "boolean" }
+      },
+      "required": ["uid", "email", "firstName", "lastName", "role", "avatarUrl", "birthDate", "phoneNumber"]
+    },
+    "Event": {
+      "title": "Squad Event",
+      "description": "Training session or official match.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["TRAINING", "MATCH"] },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "venue": { "type": "string" },
+        "opponent": { "type": "string" },
+        "formation": { "type": "string" },
+        "pitchAssignments": { "type": "object", "description": "slotId to userId mapping" },
+        "benchAssignments": { "type": "array", "description": "list of userIds" },
+        "isCompleted": { "type": "boolean" },
+        "isPublished": { "type": "boolean" },
+        "matchStats": { "type": "object", "description": "userId to stats mapping" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "date", "time", "venue", "isCompleted"]
+    },
+    "Rsvp": {
+      "title": "RSVP",
+      "description": "User attendance for an event.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "status": { "type": "string", "enum": ["JOINED"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "eventId", "status"]
+    },
+    "Rating": {
+      "title": "Match Rating",
+      "description": "Coach performance score for a player in a match.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventId": { "type": "string" },
+        "userId": { "type": "string" },
+        "score": { "type": "number", "minimum": 1, "maximum": 10 },
+        "coachId": { "type": "string" }
+      },
+      "required": ["eventId", "userId", "score", "coachId"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": { "schema": "User", "description": "Global users" },
+    "/events/{eventId}": { "schema": "Event", "description": "Squad schedule" },
+    "/events/{eventId}/rsvps/{userId}": { "schema": "Rsvp", "description": "Attendance list" },
+    "/events/{eventId}/ratings/{userId}": { "schema": "Rating", "description": "Post-match scores" }
+  }
+}
