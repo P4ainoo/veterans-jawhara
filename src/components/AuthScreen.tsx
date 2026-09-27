@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { UserProfile } from '../store/useSquadStore';
+import clubLogo from '../assets/images/jawhara_crest_1790419338393.jpg';
 import { auth, db } from '../lib/firebase';
 import { 
   createUserWithEmailAndPassword, 
@@ -162,7 +163,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
           >
              <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full animate-pulse" />
              <div className="relative w-24 h-24 bg-surface-highest rounded-[2rem] border border-white/10 p-0.5 shadow-2xl flex items-center justify-center overflow-hidden group">
-               <img src="/src/assets/images/jawhara_crest_1790419338393.jpg" className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700" alt="Logo" />
+               <img src={clubLogo} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700" alt="Logo" />
              </div>
           </motion.div>
           <h1 className="text-4xl font-headline text-white">VETERANS JAWHARA</h1>

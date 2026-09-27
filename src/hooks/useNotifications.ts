@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSquadStore } from '../store/useSquadStore';
+import clubLogo from '../assets/images/jawhara_crest_1790419338393.jpg';
 
 export function useNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>(
@@ -37,7 +38,7 @@ export function useNotifications() {
           // Send notification
           new Notification('JAWHARA TACTICAL ALERT', {
             body: `${event.type === 'MATCH' ? 'Match vs ' + event.opponent : 'Squad Drills'} starts in 1 hour at ${event.venue}. Be ready operative.`,
-            icon: '/src/assets/images/jawhara_crest_1790419338393.jpg'
+            icon: clubLogo
           });
 
           setNotifiedEventIds(prev => new Set(prev).add(event.id));

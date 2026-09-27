@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { AuthScreen } from './components/AuthScreen';
 import { useSquadStore, SquadEvent, UserProfile } from './store/useSquadStore';
+import clubLogo from './assets/images/jawhara_crest_1790419338393.jpg';
 import { cn } from './lib/utils';
 import { PitchCanvas } from './components/PitchCanvas';
 import { PlayerCard } from './components/PlayerCard';
@@ -210,7 +211,7 @@ export default function App() {
       <header className="sticky top-0 inset-x-0 h-14 bg-surface/80 backdrop-blur-xl border-b border-border-soft z-50 px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-surface-highest p-0.5 border border-white/10 shadow-lg flex items-center justify-center overflow-hidden">
-            <img src="/src/assets/images/jawhara_crest_1790419338393.jpg" className="w-full h-full object-contain" alt="VJ" />
+            <img src={clubLogo} className="w-full h-full object-contain" alt="VJ" />
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-headline text-primary leading-none">VETERANS JAWHARA</span>
