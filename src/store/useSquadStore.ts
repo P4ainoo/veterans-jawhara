@@ -12,7 +12,7 @@ export interface UserProfile {
   lastName: string;
   birthDate: string;
   phoneNumber: string;
-  avatarUrl: string;
+  avatarUrl: string; // Stored as Base64 string (compressed)
   role: UserRole;
   jerseyNumber?: number;
   position?: Position;
