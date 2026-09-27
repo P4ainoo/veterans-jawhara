@@ -165,8 +165,8 @@ export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = fa
 
         <div className="space-y-6">
            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Reserves & Subs</h4>
-              <span className="text-[9px] font-black text-secondary uppercase tracking-widest bg-secondary/10 px-2 py-0.5 rounded-lg border border-secondary/20">Unlimited Capacity</span>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Remplaçants & Réserves</h4>
+              <span className="text-[9px] font-black text-secondary uppercase tracking-widest bg-secondary/10 px-2 py-0.5 rounded-lg border border-secondary/20">Capacité Illimitée</span>
            </div>
            
            <BenchContainer 
@@ -219,17 +219,17 @@ function RosterDrawer({ players, rsvpCount }: { players: UserProfile[], rsvpCoun
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
       
       <div className="flex items-center justify-between relative z-10">
-         <h5 className="text-[10px] font-black uppercase tracking-widest text-white/40">Available Operatives ({players.length})</h5>
+         <h5 className="text-[10px] font-black uppercase tracking-widest text-white/40">Joueurs Disponibles ({players.length})</h5>
          <div className="flex items-center gap-1 text-[8px] font-black text-primary uppercase">
            <CheckCircle2 size={12} />
-           RSVP Verified ({rsvpCount})
+           Présence Confirmée ({rsvpCount})
          </div>
       </div>
       
       <div className="flex flex-wrap gap-4 relative z-10">
          {players.length === 0 ? (
            <div className="w-full py-10 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30">
-              <span className="text-[10px] font-black uppercase tracking-widest">No available units for deployment</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Aucun joueur disponible</span>
            </div>
          ) : (
            players.map(user => (
@@ -240,7 +240,7 @@ function RosterDrawer({ players, rsvpCount }: { players: UserProfile[], rsvpCoun
       
       {isOver && (
         <div className="absolute inset-0 bg-primary/5 backdrop-blur-sm flex items-center justify-center z-50 rounded-[2.5rem]">
-           <span className="text-xs font-black uppercase tracking-[0.3em] text-primary animate-pulse">Release to return to roster</span>
+           <span className="text-xs font-black uppercase tracking-[0.3em] text-primary animate-pulse">Relâcher pour retirer</span>
         </div>
       )}
     </div>
@@ -299,7 +299,7 @@ function BenchContainer({ players, readOnly, matchStats }: { players: UserProfil
       {players.length === 0 ? (
         <div className="w-full flex flex-col items-center justify-center opacity-20 py-4">
            <PlusCircle size={24} className="mb-2" />
-           <span className="text-[10px] font-bold uppercase tracking-widest">Drag players here</span>
+           <span className="text-[10px] font-bold uppercase tracking-widest">Glisser les joueurs ici</span>
         </div>
       ) : (
         players.map((p) => (

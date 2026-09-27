@@ -18,7 +18,14 @@ import {
   CheckCircle2,
   ArrowRight,
   Camera,
-  Footprints
+  Footprints,
+  Activity,
+  Clock,
+  AlertCircle,
+  Check,
+  X,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { AuthScreen } from './components/AuthScreen';
 import { useSquadStore, SquadEvent, UserProfile } from './store/useSquadStore';
@@ -28,7 +35,6 @@ import { PlayerCard } from './components/PlayerCard';
 import { RatingConsole } from './components/RatingConsole';
 import { useNotifications } from './hooks/useNotifications';
 import { auth, db } from './lib/firebase';
-import { Bell, BellOff } from 'lucide-react';
 import { 
   onSnapshot, 
   collection, 
@@ -43,12 +49,12 @@ import {
 } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 
-type Tab = 'squad' | 'explore' | 'leaderboard' | 'profile';
+type Tab = 'dashboard' | 'squad' | 'matchday' | 'reports' | 'profile';
 
 export default function App() {
   const { currentUser, setCurrentUser, roster, setRoster, events, setEvents, activeEventId, setActiveEvent } = useSquadStore();
   const { permission, requestPermission } = useNotifications();
-  const [activeTab, setActiveTab] = useState<Tab>('explore');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showEventCreator, setShowEventCreator] = useState(false);
   const [showRatingConsole, setShowRatingConsole] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -97,19 +103,21 @@ export default function App() {
     });
   }, [currentUser, setEvents, isAuthChecking]);
 
-  const [confirmedUsers, setConfirmedUsers] = useState<UserProfile[]>([]);
+  const [rsvps, setRsvps] = useState<Record<string, 'JOINED' | 'DECLINED'>>({});
 
   // Fetch RSVPs for active event
   useEffect(() => {
     if (isAuthChecking || !auth.currentUser || !activeEventId) {
-      setConfirmedUsers([]);
+      setRsvps({});
       return;
     }
     const rsvpRef = collection(db, 'events', activeEventId, 'rsvps');
     return onSnapshot(rsvpRef, (snapshot) => {
-      const ids = snapshot.docs.map(doc => doc.id);
-      const members = roster.filter(u => ids.includes(u.uid));
-      setConfirmedUsers(members);
+      const rsvpMap: Record<string, 'JOINED' | 'DECLINED'> = {};
+      snapshot.docs.forEach(doc => {
+        rsvpMap[doc.id] = doc.data().status;
+      });
+      setRsvps(rsvpMap);
     }, (error) => {
       console.error("RSVP Listener Error:", error);
     });
@@ -128,6 +136,8 @@ export default function App() {
   }
 
   const activeEvent = events.find(e => e.id === activeEventId);
+  const confirmedUsers = roster.filter(u => rsvps[u.uid] === 'JOINED');
+  const declinedUsers = roster.filter(u => rsvps[u.uid] === 'DECLINED');
   const participantsCount = confirmedUsers.length;
 
   const handleLogout = async () => {
@@ -135,16 +145,16 @@ export default function App() {
     setCurrentUser(null);
   };
 
-  const handleRsvp = async (eventId: string) => {
+  const handleRsvp = async (eventId: string, status: 'JOINED' | 'DECLINED') => {
     try {
       const rsvpDoc = doc(db, 'events', eventId, 'rsvps', currentUser.uid);
       await setDoc(rsvpDoc, {
         userId: currentUser.uid,
         eventId,
-        status: 'JOINED',
+        status,
         timestamp: new Date().toISOString()
       });
-      alert('You have RSVP\'d as JOINED!');
+      alert(`Présence mise à jour : ${status === 'JOINED' ? 'PRÉSENT' : 'ABSENT'}`);
     } catch (error) {
       console.error('RSVP Error:', error);
     }
@@ -159,11 +169,11 @@ export default function App() {
       setCurrentUser({ ...currentUser, ...data });
       // If it's not a photo update, show generic success
       if (!data.avatarUrl) {
-        alert("Profile Intel Synchronized.");
+        alert("Profil synchronisé.");
       }
     } catch (error) {
       console.error('Profile Update Error:', error);
-      alert("Failed to synchronize intel. Check your uplink.");
+      alert("Échec de la synchronisation. Vérifiez votre connexion.");
     } finally {
       setIsSavingProfile(false);
     }
@@ -174,7 +184,7 @@ export default function App() {
     if (!file) return;
 
     if (file.size > 800 * 1024) {
-      alert("Intel too large. Max 800KB for tactical photos (to fit squad encrypted storage).");
+      alert("Fichier trop volumineux. Max 800 Ko pour les photos.");
       return;
     }
 
@@ -182,7 +192,7 @@ export default function App() {
     reader.onloadend = async () => {
       const base64String = reader.result as string;
       await updateProfile({ avatarUrl: base64String });
-      alert("Tactical Intel Updated: Photo saved to squad vault.");
+      alert("Photo mise à jour : sauvegardée dans le coffre de l'équipe.");
     };
     reader.readAsDataURL(file);
   };
@@ -198,7 +208,7 @@ export default function App() {
           <div className="flex flex-col">
             <span className="text-lg font-headline text-primary leading-none">VETERANS JAWHARA</span>
             <span className="text-[8px] text-white/30 uppercase font-black tracking-widest leading-none mt-0.5">
-              {currentUser.role} COMMAND
+              COMMANDEMENT {currentUser.role === 'COACH' ? 'ENTRAÎNEUR' : 'JOUEUR'}
             </span>
           </div>
         </div>
@@ -225,12 +235,143 @@ export default function App() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-8"
             >
+              {activeTab === 'dashboard' && (
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                     <h2 className="text-2xl font-headline text-white">Tableau de Bord</h2>
+                     <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.2em]">
+                        <Activity size={14} className="animate-pulse" /> État en Direct
+                     </div>
+                  </div>
+
+                  {/* Quick Actions Card */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                     {currentUser.role === 'COACH' && (
+                       <button 
+                        onClick={() => setShowEventCreator(true)}
+                        className="bg-primary text-black p-4 rounded-3xl flex flex-col items-center justify-center gap-2 hover:scale-105 transition-all shadow-lg active:scale-95"
+                       >
+                         <PlusCircle size={24} />
+                         <span className="text-[9px] font-black uppercase tracking-widest">Ajouter Match</span>
+                       </button>
+                     )}
+                     <button 
+                      onClick={() => setActiveTab('squad')}
+                      className="bg-white/5 border border-white/5 p-4 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95"
+                     >
+                       <Users size={24} className="text-secondary" />
+                       <span className="text-[9px] font-black uppercase tracking-widest">Effectif</span>
+                     </button>
+                     <button 
+                      onClick={() => setActiveTab('matchday')}
+                      className="bg-white/5 border border-white/5 p-4 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95"
+                     >
+                       <Calendar size={24} className="text-primary" />
+                       <span className="text-[9px] font-black uppercase tracking-widest">Calendrier</span>
+                     </button>
+                     <button 
+                      onClick={() => setActiveTab('reports')}
+                      className="bg-white/5 border border-white/5 p-4 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95"
+                     >
+                       <Trophy size={24} className="text-[#FFD700]" />
+                       <span className="text-[9px] font-black uppercase tracking-widest">Stats</span>
+                     </button>
+                  </div>
+
+                  {/* Next Match Spotlight */}
+                  {events.find(e => !e.isCompleted) ? (
+                    <div className="glass-card rounded-[2.5rem] p-8 border border-primary/20 relative overflow-hidden shadow-2xl">
+                       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+                       <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
+                          <div className="flex-1 space-y-4 text-center sm:text-left">
+                             <span className="text-[9px] font-black text-primary uppercase tracking-[0.3em]">Prochain Match</span>
+                             <h3 className="text-3xl font-headline">VS {events.find(e => !e.isCompleted)?.opponent}</h3>
+                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-white/40">
+                                <span className="text-xs font-black uppercase flex items-center gap-2">
+                                   <Calendar size={14} className="text-primary" /> {events.find(e => !e.isCompleted)?.date}
+                                </span>
+                                <span className="text-xs font-black uppercase flex items-center gap-2">
+                                   <Clock size={14} className="text-primary" /> {events.find(e => !e.isCompleted)?.time}
+                                </span>
+                                <span className="text-xs font-black uppercase flex items-center gap-2">
+                                   <MapPin size={14} className="text-primary" /> {events.find(e => !e.isCompleted)?.venue}
+                                </span>
+                             </div>
+                          </div>
+                          <button 
+                            onClick={() => setActiveEvent(events.find(e => !e.isCompleted)?.id!)}
+                            className="btn-elite px-8 py-4 h-auto text-xs"
+                          >
+                             Détails du Match <ArrowRight size={16} />
+                          </button>
+                       </div>
+                    </div>
+                  ) : (
+                    <div className="glass-card rounded-[2.5rem] p-12 text-center border border-white/5 opacity-40">
+                       <Shield size={48} className="mx-auto mb-4 text-white/20" />
+                       <h3 className="text-[10px] font-black uppercase tracking-widest">Aucun Match Prévu</h3>
+                    </div>
+                  )}
+
+                  {/* Team Summary Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div className="glass-card p-6 rounded-[2rem] border border-white/5 space-y-4">
+                        <div className="flex items-center justify-between">
+                           <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30">État de l'Effectif</h4>
+                           <button 
+                            onClick={() => setActiveTab('squad')}
+                            className="text-[8px] font-black text-primary uppercase tracking-widest hover:underline"
+                           >Voir Tout</button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="bg-white/5 p-4 rounded-2xl">
+                              <span className="text-2xl font-headline text-primary">{roster.length}</span>
+                              <span className="block text-[8px] font-black uppercase opacity-40">Inscrits</span>
+                           </div>
+                           <div className="bg-white/5 p-4 rounded-2xl">
+                              <span className="text-2xl font-headline text-secondary">{roster.filter(p => p.healthStatus === 'HEALTHY' || !p.healthStatus).length}</span>
+                              <span className="block text-[8px] font-black uppercase opacity-40">Disponibles</span>
+                           </div>
+                        </div>
+                        {roster.some(p => p.healthStatus === 'INJURED') && (
+                          <div className="pt-2">
+                             <span className="text-[8px] font-black text-red-500 uppercase tracking-widest block mb-2">Rapport de Blessures</span>
+                             <div className="flex flex-wrap gap-2">
+                                {roster.filter(p => p.healthStatus === 'INJURED').map(p => (
+                                  <div key={p.uid} className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
+                                     <div className="w-4 h-4 rounded-full overflow-hidden border border-red-500/40">
+                                        <img src={p.avatarUrl} className="w-full h-full object-cover" />
+                                     </div>
+                                     <span className="text-[8px] font-black uppercase text-red-500">{p.lastName}</span>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                        )}
+                     </div>
+                     <div className="glass-card p-6 rounded-[2rem] border border-white/5 space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30">Progression Saison</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="bg-white/5 p-4 rounded-2xl">
+                              <span className="text-2xl font-headline text-[#FFD700]">{events.filter(e => e.isCompleted).length}</span>
+                              <span className="block text-[8px] font-black uppercase opacity-40">Joués</span>
+                           </div>
+                           <div className="bg-white/5 p-4 rounded-2xl">
+                              <span className="text-2xl font-headline text-[#00E5FF]">{roster.reduce((acc, p) => acc + (p.goals || 0), 0)}</span>
+                              <span className="block text-[8px] font-black uppercase opacity-40">Buts Équipe</span>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'squad' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                     <h2 className="text-2xl font-headline">Active Roster</h2>
+                     <h2 className="text-2xl font-headline text-white">Effectif de l'Équipe</h2>
                      <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
-                        {roster.length} OPERATIVES
+                        {roster.length} JOUEURS TOTAL
                      </span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
@@ -241,17 +382,17 @@ export default function App() {
                 </div>
               )}
 
-              {activeTab === 'explore' && (
+              {activeTab === 'matchday' && (
                 <div className="space-y-8">
                   <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                     <h2 className="text-2xl font-headline text-white">Operations</h2>
+                     <h2 className="text-2xl font-headline text-white">Calendrier des Matchs</h2>
                      {currentUser.role === 'COACH' && (
                        <button 
                         onClick={() => setShowEventCreator(true)}
                         className="btn-elite h-10 px-4 text-[10px]"
                        >
                          <PlusCircle size={14} />
-                         Host Op
+                         Ajouter Match
                        </button>
                      )}
                   </div>
@@ -260,7 +401,7 @@ export default function App() {
                      {events.length === 0 ? (
                        <div className="bg-surface-raised rounded-[2.5rem] p-12 border border-border-soft text-center flex flex-col items-center opacity-40">
                           <Calendar size={48} className="mb-4 text-white/20" />
-                          <h3 className="text-[10px] font-black uppercase tracking-widest">No Active Missions</h3>
+                          <h3 className="text-[10px] font-black uppercase tracking-widest">Aucun Match Trouvé</h3>
                        </div>
                      ) : (
                        events.map((event) => (
@@ -271,22 +412,22 @@ export default function App() {
                 </div>
               )}
 
-              {activeTab === 'leaderboard' && (
+              {activeTab === 'reports' && (
                 <div className="space-y-6">
                    <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                      <h2 className="text-2xl font-headline">Rankings</h2>
-                      <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">SEASON 1</span>
+                      <h2 className="text-2xl font-headline text-white">Stats de Performance</h2>
+                      <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">SAISON 1</span>
                    </div>
-                   <div className="glass-card rounded-[2.5rem] overflow-hidden shadow-2xl">
+                   <div className="glass-card rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5">
                       <table className="w-full text-left border-collapse">
                          <thead className="bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-white/40">
                             <tr>
                                <th className="px-6 py-5">#</th>
-                               <th className="px-6 py-5">Operative</th>
-                               <th className="px-6 py-5 text-center">Ops</th>
-                               <th className="px-6 py-5 text-center">G</th>
-                               <th className="px-6 py-5 text-center">A</th>
-                               <th className="px-6 py-5 text-right">Rating</th>
+                               <th className="px-6 py-5">Joueur</th>
+                               <th className="px-6 py-5 text-center">Matchs</th>
+                               <th className="px-6 py-5 text-center">B</th>
+                               <th className="px-6 py-5 text-center">P</th>
+                               <th className="px-6 py-5 text-right">Note</th>
                             </tr>
                          </thead>
                          <tbody className="divide-y divide-white/5">
@@ -298,7 +439,7 @@ export default function App() {
                                         <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 group-hover:border-secondary transition-all">
                                            <img src={player.avatarUrl} className="w-full h-full object-cover" alt={player.lastName} />
                                         </div>
-                                        <span className="text-xs font-black uppercase tracking-tight">{player.firstName[0]}. {player.lastName}</span>
+                                        <span className="text-xs font-black uppercase tracking-tight">{player.lastName}</span>
                                      </div>
                                   </td>
                                   <td className="px-6 py-5 text-center text-[10px] font-black opacity-40 tabular-nums">{player.matchCount || 0}</td>
@@ -317,8 +458,8 @@ export default function App() {
 
               {activeTab === 'profile' && (
                 <div className="space-y-8">
-                   <h2 className="text-2xl font-headline">Intelligence</h2>
-                   <div className="glass-card rounded-[3rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+                   <h2 className="text-2xl font-headline text-white">Profile Settings</h2>
+                   <div className="glass-card rounded-[3rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden border border-white/5">
                       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
                       
                       <div className="flex flex-col md:flex-row gap-10 items-start md:items-center">
@@ -333,7 +474,7 @@ export default function App() {
                                     onChange={handleAvatarUpload}
                                   />
                                   <Camera className="text-white mb-2" size={32} />
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Update Intel</span>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Update Photo</span>
                                </label>
                             </div>
                             <div className="flex flex-col items-center">
@@ -346,7 +487,7 @@ export default function App() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                <ProfileField label="Role" value={currentUser.role} readOnly />
                                <ProfileField label="Phone" value={currentUser.phoneNumber} onSave={(v: string) => updateProfile({ phoneNumber: v })} />
-                               <ProfileField label="Birth Date" value={currentUser.birthDate} readOnly />
+                               <ProfileField label="Health Status" value={currentUser.healthStatus || 'HEALTHY'} onSave={(v: string) => updateProfile({ healthStatus: v as any })} />
                                <ProfileField label="Jersey #" value={String(currentUser.jerseyNumber || '-')} onSave={(v: string) => updateProfile({ jerseyNumber: parseInt(v) || 0 })} />
                                <ProfileField label="Position" value={currentUser.position || '-'} onSave={(v: string) => updateProfile({ position: v as any })} />
                             </div>
@@ -463,7 +604,7 @@ export default function App() {
                     {activeEvent?.type === 'MATCH' && (
                        <div className="space-y-6">
                           <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Tactical Deployment</h4>
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Déploiement Tactique</h4>
                              <div className="flex items-center gap-1.5 text-[9px] font-black text-secondary uppercase tracking-widest">
                                <div className="w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_8px_#00e5ff] animate-pulse" />
                                Titulaire
@@ -482,7 +623,7 @@ export default function App() {
                     <div className="glass-card rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden">
                         {activeEvent?.isCompleted && activeEvent?.matchStats && (
                           <div className="glass-card rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden mb-8 border border-white/5">
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-6">Match Combat Stats</h4>
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-6">Stats de Match</h4>
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {Object.entries(activeEvent.matchStats).map(([uid, stats]: [string, any]) => {
                                    const player = roster.find(p => p.uid === uid);
@@ -519,14 +660,26 @@ export default function App() {
                           </div>
                         )}
 
-                       <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-6">Mission Logistics</h4>
+                       <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-6">Détails du Match</h4>
+                       
+                       {activeEvent?.notes && (
+                         <div className="mb-8 p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                            <div className="flex items-center gap-2 mb-2">
+                               <AlertCircle size={14} className="text-primary" />
+                               <span className="text-[9px] font-black uppercase tracking-widest text-primary">Notes de l'Entraîneur</span>
+                            </div>
+                            <p className="text-xs font-bold text-white/80 leading-relaxed uppercase">
+                               {activeEvent.notes}
+                            </p>
+                         </div>
+                       )}
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                           <div className="flex items-center gap-4">
                              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                                 <MapPin size={24} />
                              </div>
                              <div className="flex flex-col">
-                                <span className="text-[8px] font-black opacity-30 uppercase tracking-widest">A.O. (Area of Ops)</span>
+                                <span className="text-[8px] font-black opacity-30 uppercase tracking-widest">Lieu du Match</span>
                                 <span className="text-sm font-black uppercase tracking-tight">{activeEvent?.venue}</span>
                              </div>
                           </div>
@@ -536,7 +689,7 @@ export default function App() {
                                   <Shield size={24} />
                                </div>
                                <div className="flex flex-col">
-                                  <span className="text-[8px] font-black opacity-30 uppercase tracking-widest">Adversary</span>
+                                  <span className="text-[8px] font-black opacity-30 uppercase tracking-widest">Adversaire</span>
                                   <span className="text-sm font-black uppercase tracking-tight">{activeEvent?.opponent}</span>
                                </div>
                             </div>
@@ -550,35 +703,71 @@ export default function App() {
                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl" />
                        
                        <div className="flex items-center justify-between">
-                          <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40">Status Report</h4>
-                          <span className="text-lg font-headline text-primary">{participantsCount} DEPLOYED</span>
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40">Attendance</h4>
+                          <span className="text-lg font-headline text-primary">{participantsCount} GOING</span>
                        </div>
                        
-                       {currentUser.role === 'PLAYER' && (
-                         <button 
-                          onClick={() => handleRsvp(activeEventId!)}
-                          className="btn-elite w-full h-16 group"
-                         >
-                            Confirm Deployment <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                         </button>
+                       {currentUser.role === 'PLAYER' && !activeEvent?.isCompleted && (
+                         <div className="grid grid-cols-2 gap-3">
+                            <button 
+                             onClick={() => handleRsvp(activeEventId!, 'JOINED')}
+                             className={cn(
+                               "h-14 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest transition-all",
+                               rsvps[currentUser.uid] === 'JOINED' 
+                                 ? "bg-primary text-black shadow-lg shadow-primary/20" 
+                                 : "bg-white/5 text-white/40 border border-white/5 hover:bg-white/10"
+                             )}
+                            >
+                               <Check size={16} /> Going
+                            </button>
+                            <button 
+                             onClick={() => handleRsvp(activeEventId!, 'DECLINED')}
+                             className={cn(
+                               "h-14 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest transition-all",
+                               rsvps[currentUser.uid] === 'DECLINED' 
+                                 ? "bg-red-500 text-white shadow-lg shadow-red-500/20" 
+                                 : "bg-white/5 text-white/40 border border-white/5 hover:bg-white/10"
+                             )}
+                            >
+                               <X size={16} /> Unavailable
+                            </button>
+                         </div>
                        )}
 
-                       <div className="space-y-4">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Confirmed Unit</span>
-                          <div className="flex flex-wrap gap-2.5">
-                             {confirmedUsers.length === 0 ? (
-                               <span className="text-[10px] opacity-20 uppercase font-black tracking-widest">Waiting for Signal...</span>
-                             ) : (
-                               confirmedUsers.map(player => (
-                                 <div key={player.uid} className="w-11 h-11 rounded-xl overflow-hidden border border-white/10 shadow-lg relative group bg-surface-highest transition-all hover:scale-110 active:scale-95">
-                                    <img src={player.avatarUrl} className="w-full h-full object-cover" alt={player.lastName} />
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                       <span className="text-[6px] font-black text-center px-1 uppercase text-white">{player.lastName}</span>
+                       <div className="space-y-6">
+                          <div className="space-y-3">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Confirmed ({confirmedUsers.length})</span>
+                             <div className="flex flex-wrap gap-2.5">
+                                {confirmedUsers.length === 0 ? (
+                                  <span className="text-[10px] opacity-20 uppercase font-black tracking-widest">Waiting for Signal...</span>
+                                ) : (
+                                  confirmedUsers.map(player => (
+                                    <div key={player.uid} className="w-11 h-11 rounded-xl overflow-hidden border border-white/10 shadow-lg relative group bg-surface-highest transition-all hover:scale-110 active:scale-95">
+                                       <img src={player.avatarUrl} className="w-full h-full object-cover" alt={player.lastName} />
+                                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                          <span className="text-[6px] font-black text-center px-1 uppercase text-white">{player.lastName}</span>
+                                       </div>
                                     </div>
-                                 </div>
-                               ))
-                             )}
+                                  ))
+                                )}
+                             </div>
                           </div>
+
+                          {declinedUsers.length > 0 && (
+                            <div className="space-y-3 pt-4 border-t border-white/5">
+                               <span className="text-[10px] font-black uppercase tracking-widest text-red-500/40">Unavailable ({declinedUsers.length})</span>
+                               <div className="flex flex-wrap gap-2.5">
+                                  {declinedUsers.map(player => (
+                                    <div key={player.uid} className="w-9 h-9 rounded-xl overflow-hidden border border-white/10 opacity-40 grayscale filter hover:grayscale-0 hover:opacity-100 transition-all cursor-help relative group">
+                                       <img src={player.avatarUrl} className="w-full h-full object-cover" alt={player.lastName} />
+                                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                          <span className="text-[5px] font-black text-center px-1 uppercase text-white">{player.lastName}</span>
+                                       </div>
+                                    </div>
+                                  ))}
+                               </div>
+                            </div>
+                          )}
                        </div>
                     </div>
 
@@ -587,7 +776,7 @@ export default function App() {
                         onClick={() => setShowRatingConsole(true)}
                         className="btn-ghost w-full"
                        >
-                          Finalize Mission & Review
+                          Finaliser le Match & Noter
                        </button>
                     )}
                  </div>
@@ -618,7 +807,7 @@ export default function App() {
               onClick={() => setActiveTab('profile')}
               className="h-10 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest transition-all border border-white/5 active:scale-95"
              >
-                Modify Intel
+                Modifier Profil
              </button>
           </motion.div>
         </div>
@@ -629,28 +818,34 @@ export default function App() {
         "fixed bottom-0 inset-x-0 h-18 sm:h-20 bg-surface/90 backdrop-blur-3xl border-t border-border-soft z-50 px-4 transition-transform duration-500 pb-safe",
         activeEventId ? "translate-y-full" : "translate-y-0"
       )}>
-        <div className="grid grid-cols-4 h-full items-center max-w-lg mx-auto">
+        <div className="grid grid-cols-5 h-full items-center max-w-lg mx-auto">
           <NavTab 
-            icon={<LayoutGrid size={24} />} 
-            label="Squad" 
+            icon={<LayoutGrid size={22} />} 
+            label="Dash" 
+            active={activeTab === 'dashboard'} 
+            onClick={() => setActiveTab('dashboard')} 
+          />
+          <NavTab 
+            icon={<Users size={22} />} 
+            label="Effectif" 
             active={activeTab === 'squad'} 
             onClick={() => setActiveTab('squad')} 
           />
           <NavTab 
-            icon={<Compass size={24} />} 
-            label="Intel" 
-            active={activeTab === 'explore'} 
-            onClick={() => setActiveTab('explore')} 
+            icon={<Compass size={22} />} 
+            label="Matchs" 
+            active={activeTab === 'matchday'} 
+            onClick={() => setActiveTab('matchday')} 
           />
           <NavTab 
-            icon={<Trophy size={24} />} 
-            label="Ranks" 
-            active={activeTab === 'leaderboard'} 
-            onClick={() => setActiveTab('leaderboard')} 
+            icon={<Trophy size={22} />} 
+            label="Stats" 
+            active={activeTab === 'reports'} 
+            onClick={() => setActiveTab('reports')} 
           />
           <NavTab 
-            icon={<User size={24} />} 
-            label="Self" 
+            icon={<User size={22} />} 
+            label="Profil" 
             active={activeTab === 'profile'} 
             onClick={() => setActiveTab('profile')} 
           />
@@ -679,20 +874,59 @@ function ProfileField({ label, value, onSave, readOnly }: any) {
     setIsEditing(false);
   };
 
+  const isSelect = label === 'État de Santé' || label === 'Poste' || label === 'Rôle';
+  
+  const healthMapping: Record<string, string> = {
+    'HEALTHY': 'SAIN',
+    'INJURED': 'BLESSÉ',
+    'RECOVERING': 'RÉCUPÉRATION',
+    'AWAY': 'ABSENT'
+  };
+
+  const roleMapping: Record<string, string> = {
+    'PLAYER': 'JOUEUR',
+    'COACH': 'ENTRAÎNEUR',
+    'ADMIN': 'ADMIN'
+  };
+
+  const options = label === 'État de Santé' 
+    ? ['HEALTHY', 'INJURED', 'RECOVERING', 'AWAY']
+    : label === 'Poste'
+    ? ['GK', 'DEF', 'MID', 'FWD']
+    : ['PLAYER', 'COACH', 'ADMIN'];
+
+  const getDisplayVal = (v: string) => {
+    if (label === 'État de Santé') return healthMapping[v] || v;
+    if (label === 'Rôle') return roleMapping[v] || v;
+    return v;
+  };
+
   return (
     <div className="space-y-2 flex flex-col">
        <label className="text-[9px] font-black text-white/30 uppercase ml-2 tracking-widest">{label}</label>
        <div className="relative group">
-          <input 
-            type="text" 
-            value={val}
-            onChange={e => setVal(e.target.value)}
-            disabled={!isEditing || readOnly}
-            className={cn(
-              "w-full h-14 bg-white/5 rounded-2xl px-5 text-xs font-bold border border-white/5 focus:border-primary/30 focus:outline-none transition-all uppercase text-white disabled:opacity-50",
-              isEditing && "bg-white/10 border-primary/20"
-            )}
-          />
+          {isEditing && !readOnly ? (
+            isSelect ? (
+              <select 
+                value={val}
+                onChange={e => setVal(e.target.value)}
+                className="w-full h-14 bg-white/10 rounded-2xl px-5 text-xs font-bold border border-primary/20 focus:outline-none transition-all uppercase text-white appearance-none"
+              >
+                {options.map(opt => <option key={opt} value={opt} className="bg-surface">{getDisplayVal(opt)}</option>)}
+              </select>
+            ) : (
+              <input 
+                type="text" 
+                value={val}
+                onChange={e => setVal(e.target.value)}
+                className="w-full h-14 bg-white/10 rounded-2xl px-5 text-xs font-bold border border-primary/20 focus:outline-none transition-all uppercase text-white"
+              />
+            )
+          ) : (
+            <div className="w-full h-14 bg-white/5 rounded-2xl px-5 flex items-center text-xs font-bold border border-white/5 text-white/80 uppercase">
+              {getDisplayVal(val)}
+            </div>
+          )}
           {!readOnly && (
             <button 
               onClick={isEditing ? handleSave : () => setIsEditing(true)}
@@ -718,14 +952,17 @@ function EventCard({ event, onClick }: { event: SquadEvent, onClick: () => void 
          </div>
          <div className="flex flex-col text-left">
             <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">
-               {event.type} OPERATION
+               {event.type}
             </span>
             <h4 className="text-xl font-headline text-white group-hover:text-primary transition-colors">
-              {event.type === 'MATCH' ? `VS ${event.opponent}` : 'SQUAD DRILLS'}
+              {event.type === 'MATCH' ? `VS ${event.opponent}` : 'SQUAD TRAINING'}
             </h4>
-            <div className="flex items-center gap-4 mt-3 text-white/40">
+            <div className="flex flex-wrap items-center gap-4 mt-3 text-white/40">
                <span className="text-[10px] font-black uppercase flex items-center gap-1.5">
                   <Calendar size={12} className="text-primary" /> {event.date}
+               </span>
+               <span className="text-[10px] font-black uppercase flex items-center gap-1.5">
+                  <Clock size={12} className="text-primary" /> {event.time}
                </span>
                <span className="text-[10px] font-black uppercase flex items-center gap-1.5">
                   <MapPin size={12} className="text-primary" /> {event.venue}
@@ -787,8 +1024,8 @@ function EventCreator({ onClose }: { onClose: () => void }) {
       
       // Notify about new mission
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('NEW SQUAD MISSION', {
-          body: `${formData.type === 'MATCH' ? 'Match vs ' + formData.opponent : 'Training Session'} has been published. Report for duty!`,
+        new Notification('NOUVELLE MISSION ÉQUIPE', {
+          body: `${formData.type === 'MATCH' ? 'Match vs ' + formData.opponent : 'Entraînement'} a été publié. Signalez votre présence !`,
           icon: '/icon-512.jpg'
         });
       }
@@ -812,26 +1049,26 @@ function EventCreator({ onClose }: { onClose: () => void }) {
         className="bg-[#12141D] w-full max-w-lg rounded-[2.5rem] border border-white/5 p-8 shadow-3xl overflow-hidden relative"
        >
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#00FF66]/5 rounded-full blur-3xl pointer-events-none" />
-          <h2 className="text-2xl font-bold font-headline uppercase tracking-tight mb-6 text-white text-center">Host New Event</h2>
+          <h2 className="text-2xl font-bold font-headline uppercase tracking-tight mb-6 text-white text-center">Planifier un Match</h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
              <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-2xl">
                 <button 
                   type="button"
                   onClick={() => setFormData({...formData, type: 'MATCH'})}
-                  className={cn("py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", formData.type === 'MATCH' ? "bg-white/10 text-white" : "text-on-surface-variant")}
-                >Official Match</button>
+                  className={cn("py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", formData.type === 'MATCH' ? "bg-white/10 text-white" : "text-white/40")}
+                >Match Officiel</button>
                 <button 
                   type="button"
                   onClick={() => setFormData({...formData, type: 'TRAINING'})}
-                  className={cn("py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", formData.type === 'TRAINING' ? "bg-white/10 text-white" : "text-on-surface-variant")}
-                >Training Session</button>
+                  className={cn("py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", formData.type === 'TRAINING' ? "bg-white/10 text-white" : "text-white/40")}
+                >Entraînement</button>
              </div>
 
              <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1.5 text-left">
-                      <label className="text-[8px] font-bold text-on-surface-variant uppercase ml-2 tracking-widest">Date</label>
+                      <label className="text-[8px] font-bold text-white/40 uppercase ml-2 tracking-widest">Date</label>
                       <input 
                         type="date" 
                         value={formData.date}
@@ -840,7 +1077,7 @@ function EventCreator({ onClose }: { onClose: () => void }) {
                       />
                    </div>
                    <div className="space-y-1.5 text-left">
-                      <label className="text-[8px] font-bold text-on-surface-variant uppercase ml-2 tracking-widest">Time</label>
+                      <label className="text-[8px] font-bold text-white/40 uppercase ml-2 tracking-widest">Heure</label>
                       <input 
                         type="time" 
                         value={formData.time}
@@ -851,40 +1088,50 @@ function EventCreator({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <div className="space-y-1.5 text-left">
-                   <label className="text-[8px] font-bold text-on-surface-variant uppercase ml-2 tracking-widest">Venue / Stadium</label>
+                   <label className="text-[8px] font-bold text-white/40 uppercase ml-2 tracking-widest">Lieu / Stade</label>
                    <input 
                     type="text" 
                     value={formData.venue}
                     onChange={e => setFormData({...formData, venue: e.target.value})}
-                    placeholder="E.G. STADE EL KANTAOUI"
+                    placeholder="EX: STADE EL KANTAOUI"
                     className="w-full h-12 bg-white/5 rounded-xl px-4 text-xs font-bold border border-white/5 focus:border-[#00FF66]/30 focus:outline-none transition-all uppercase text-white placeholder:opacity-30"
                    />
                 </div>
 
                 {formData.type === 'MATCH' && (
                   <div className="space-y-1.5 text-left">
-                    <label className="text-[8px] font-bold text-on-surface-variant uppercase ml-2 tracking-widest">Opponent Name</label>
+                    <label className="text-[8px] font-bold text-white/40 uppercase ml-2 tracking-widest">Adversaire</label>
                     <input 
                       type="text" 
                       value={formData.opponent}
                       onChange={e => setFormData({...formData, opponent: e.target.value})}
-                      placeholder="E.G. ÉTOILE VETERANS"
+                      placeholder="EX: ÉTOILE VETERANS"
                       className="w-full h-12 bg-white/5 rounded-xl px-4 text-xs font-bold border border-white/5 focus:border-[#00FF66]/30 focus:outline-none transition-all uppercase text-white placeholder:opacity-30"
                     />
                   </div>
                 )}
+
+                <div className="space-y-1.5 text-left">
+                   <label className="text-[8px] font-bold text-white/40 uppercase ml-2 tracking-widest">Notes de Match / Instructions</label>
+                   <textarea 
+                    value={formData.notes}
+                    onChange={e => setFormData({...formData, notes: e.target.value})}
+                    placeholder="EX: TENUE NOIRE, ÉCHAUFFEMENT À 20:45"
+                    className="w-full h-24 bg-white/5 rounded-xl p-4 text-xs font-bold border border-white/5 focus:border-[#00FF66]/30 focus:outline-none transition-all uppercase text-white placeholder:opacity-30 resize-none"
+                   />
+                </div>
              </div>
 
              <div className="flex gap-4 pt-4">
                 <button 
                   type="button"
                   onClick={onClose}
-                  className="btn-ghost flex-1 h-16"
-                >Cancel</button>
+                  className="btn-ghost flex-1 h-14"
+                >Annuler</button>
                 <button 
                   type="submit"
-                  className="btn-elite flex-1 h-16"
-                >Publish Operation</button>
+                  className="btn-elite flex-1 h-14"
+                >Publier Match</button>
              </div>
           </form>
        </motion.div>

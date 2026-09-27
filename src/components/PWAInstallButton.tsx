@@ -20,7 +20,7 @@ export const PWAInstallButton: React.FC = () => {
         className="w-full h-14 rounded-2xl bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 transition-all flex items-center justify-center gap-3 font-headline text-sm uppercase tracking-widest"
       >
         <Download size={18} />
-        Download Tactical App
+        Installer l'App
       </button>
     );
   }
@@ -34,7 +34,7 @@ export const PWAInstallButton: React.FC = () => {
           className="w-full h-14 rounded-2xl bg-white/5 text-white/60 border border-white/5 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-headline text-sm uppercase tracking-widest"
         >
           <Smartphone size={18} />
-          Install on iOS
+          Installer sur iOS
         </button>
 
         {showIOSGuide && (
@@ -52,22 +52,22 @@ export const PWAInstallButton: React.FC = () => {
                   <Smartphone className="text-primary" size={32} />
                 </div>
                 
-                <h3 className="text-xl font-headline text-white uppercase tracking-tight mb-2">Tactical Deployment</h3>
+                <h3 className="text-xl font-headline text-white uppercase tracking-tight mb-2">Installation Tactique</h3>
                 <p className="text-sm text-white/40 mb-8 leading-relaxed">
-                  Follow these protocols to install Jawhara Hub on your home screen:
+                  Suivez ces étapes pour installer l'App sur votre écran d'accueil :
                 </p>
 
                 <div className="w-full space-y-4 text-left">
                   <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
                     <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-xs font-black shrink-0">1</div>
                     <p className="text-xs text-white/70 leading-relaxed">
-                      Tap the <span className="text-primary font-bold">Share</span> icon in the Safari toolbar.
+                      Appuyez sur l'icône <span className="text-primary font-bold">Partager</span> dans la barre Safari.
                     </p>
                   </div>
                   <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
                     <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-xs font-black shrink-0">2</div>
                     <p className="text-xs text-white/70 leading-relaxed">
-                      Scroll down and select <span className="text-primary font-bold">Add to Home Screen</span>.
+                      Faites défiler et sélectionnez <span className="text-primary font-bold">Sur l'écran d'accueil</span>.
                     </p>
                   </div>
                 </div>
@@ -76,7 +76,7 @@ export const PWAInstallButton: React.FC = () => {
                   onClick={() => setShowIOSGuide(false)}
                   className="mt-10 w-full h-14 rounded-2xl bg-white/5 text-white/60 font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all"
                 >
-                  Understood
+                  Compris
                 </button>
               </div>
             </div>
@@ -89,11 +89,11 @@ export const PWAInstallButton: React.FC = () => {
   // Fallback if PWA is not auto-detectable but likely supported (like Desktop Chrome without prompt yet)
   return (
     <button
-      onClick={() => alert("To install this app, please use the 'Install' icon in your browser's address bar or the 'Add to Home Screen' option in your browser menu.")}
+      onClick={() => alert("Pour installer cette application, veuillez utiliser l'icône 'Installer' dans la barre d'adresse de votre navigateur ou l'option 'Sur l'écran d'accueil' du menu.")}
       className="w-full h-14 rounded-2xl bg-white/5 text-white/40 border border-white/5 hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-headline text-sm uppercase tracking-widest"
     >
       <Smartphone size={18} />
-      Installation Manual
+      Manuel d'Installation
     </button>
   );
 };

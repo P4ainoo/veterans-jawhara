@@ -79,11 +79,20 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', cla
                </span>
                <span className="text-[7px] font-black opacity-40 uppercase tracking-widest">{player.position || 'MID'}</span>
             </div>
-            {isGold && (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}>
-                <Star size={10} className="text-tertiary fill-tertiary" />
-              </motion.div>
-            )}
+            <div className="flex flex-col items-end gap-1">
+               {isGold && (
+                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}>
+                   <Star size={10} className="text-tertiary fill-tertiary" />
+                 </motion.div>
+               )}
+               <div className={cn(
+                  "w-1.5 h-1.5 rounded-full shadow-[0_0_8px]",
+                  player.healthStatus === 'INJURED' ? "bg-red-500 shadow-red-500" :
+                  player.healthStatus === 'RECOVERING' ? "bg-orange-500 shadow-orange-500" :
+                  player.healthStatus === 'AWAY' ? "bg-blue-500 shadow-blue-500" :
+                  "bg-primary shadow-primary"
+               )} title={player.healthStatus || 'HEALTHY'} />
+            </div>
          </div>
 
          {/* Avatar */}
@@ -99,15 +108,15 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', cla
          {/* Name Banner */}
          <div className="bg-white/5 rounded-xl px-1 py-1.5 mt-auto text-center border border-white/5 group-hover:bg-primary/10 group-hover:border-primary/20 transition-all relative z-20">
             <span className="text-[10px] font-black uppercase tracking-tighter block truncate text-white/90">
-              {player.firstName[0]}. {player.lastName}
+              {player.lastName}
             </span>
          </div>
 
          {/* Mini Stats */}
          <div className="grid grid-cols-3 gap-0.5 mt-2 text-center relative z-20">
-            <StatMini label="PAC" val={88} />
-            <StatMini label="SHO" val={85} />
-            <StatMini label="PAS" val={91} />
+            <StatMini label="MATCHS" val={player.matchCount || 0} />
+            <StatMini label="BUTS" val={player.goals || 0} />
+            <StatMini label="PASSES" val={player.assists || 0} />
          </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type UserRole = 'PLAYER' | 'COACH';
+export type UserRole = 'PLAYER' | 'COACH' | 'ADMIN';
 export type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
+export type HealthStatus = 'HEALTHY' | 'INJURED' | 'RECOVERING' | 'AWAY';
 
 export interface UserProfile {
   uid: string;
@@ -15,6 +16,7 @@ export interface UserProfile {
   role: UserRole;
   jerseyNumber?: number;
   position?: Position;
+  healthStatus?: HealthStatus;
   avgRating?: number;
   matchCount?: number;
   goals?: number;
@@ -26,7 +28,7 @@ export interface UserProfile {
 
 export interface SquadEvent {
   id: string;
-  type: 'TRAINING' | 'MATCH';
+  type: 'TRAINING' | 'MATCH' | 'EVENT';
   date: string;
   time: string;
   venue: string;
@@ -36,6 +38,9 @@ export interface SquadEvent {
   benchAssignments?: string[]; // userIds
   isCompleted: boolean;
   isPublished: boolean;
+  notes?: string;
+  coachSummary?: string;
+  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
   matchStats?: Record<string, {
     goals: number;
     assists: number;

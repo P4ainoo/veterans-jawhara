@@ -56,11 +56,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       if (userDoc.exists()) {
         onAuthSuccess(userDoc.data() as UserProfile);
       } else {
-        setError(`Profile data missing. Please register.`);
+        setError(`Données de profil manquantes. Veuillez vous inscrire.`);
       }
     } catch (err: any) {
       if (err.code === 'auth/operation-not-allowed') {
-        setError(`Email/Password login is disabled in the Firebase Console.`);
+        setError(`La connexion par email/mot de passe est désactivée.`);
       } else {
         setError(err.message);
       }
@@ -105,7 +105,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
       onAuthSuccess(userProfile);
     } catch (err: any) {
       if (err.code === 'auth/operation-not-allowed') {
-        setError(`Email/Password login is disabled in the Firebase Console.`);
+        setError(`L'inscription par email/mot de passe est désactivée.`);
       } else {
         setError(err.message);
       }
@@ -119,7 +119,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     if (!file) return;
 
     if (file.size > 800 * 1024) {
-      setError("Intel too large. Max 800KB for tactical photos.");
+      setError("Fichier trop volumineux. Max 800 Ko.");
       return;
     }
 
@@ -156,7 +156,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
              </div>
           </motion.div>
           <h1 className="text-4xl font-headline text-white">VETERANS JAWHARA</h1>
-          <p className="text-[10px] text-white/40 font-bold tracking-[0.5em] uppercase">Elite Tactical Hub</p>
+          <p className="text-[10px] text-white/40 font-bold tracking-[0.5em] uppercase">Hub Tactique d'Élite</p>
         </div>
 
         <div className="grid grid-cols-2 p-1.5 glass-card rounded-[2.5rem]">
@@ -167,7 +167,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
               mode === 'login' ? "bg-white/5 text-primary shadow-lg border border-white/10" : "text-white/40 hover:text-white"
             )}
           >
-            <LogIn size={14} /> Login
+            <LogIn size={14} /> Connexion
           </button>
           <button 
             onClick={() => { setMode('signup'); setStep(1); setError(null); }}
@@ -176,7 +176,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
               mode === 'signup' ? "bg-primary text-black shadow-elite" : "text-white/40 hover:text-white"
             )}
           >
-            <UserPlus size={14} /> Register
+            <UserPlus size={14} /> S'inscrire
           </button>
         </div>
 
@@ -229,19 +229,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                                   <PlusCircle size={18} />
                                 </div>
                             </div>
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Upload Tactical Photo</span>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Télécharger Photo</span>
                          </div>
 
                          <div className="space-y-4">
                             <InputField 
-                              label="Email Address" 
+                              label="Adresse Email" 
                               type="email"
                               placeholder="COACH@SQUAD7.PRO" 
                               value={email}
                               onChange={setEmail}
                             />
                             <InputField 
-                              label="Password" 
+                              label="Mot de Passe" 
                               type="password"
                               placeholder="••••••••" 
                               value={password}
@@ -251,13 +251,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
                          <div className="grid grid-cols-2 gap-4">
                             <InputField 
-                              label="First Name" 
+                              label="Prénom" 
                               placeholder="YASSINE" 
                               value={formData.firstName}
                               onChange={(v: string) => setFormData({...formData, firstName: v})}
                             />
                             <InputField 
-                              label="Last Name" 
+                              label="Nom" 
                               placeholder="BEN AMOR" 
                               value={formData.lastName}
                               onChange={(v: string) => setFormData({...formData, lastName: v})}
@@ -266,13 +266,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
                          <div className="grid grid-cols-2 gap-4">
                             <InputField 
-                              label="Birth Date" 
+                              label="Date de Naissance" 
                               type="date"
                               value={formData.birthDate}
                               onChange={(v: string) => setFormData({...formData, birthDate: v})}
                             />
                             <InputField 
-                              label="Phone" 
+                              label="Téléphone" 
                               placeholder="+216 ..." 
                               type="tel"
                               value={formData.phoneNumber}
@@ -287,7 +287,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                         disabled={!formData.firstName || !formData.lastName || !email || password.length < 6}
                         className="btn-elite w-full group"
                       >
-                        Tactical Setup <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                        Configuration <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
                       </button>
                    </motion.div>
                  )}
@@ -301,21 +301,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                     className="space-y-8"
                    >
                       <div className="space-y-6 text-center">
-                         <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Select Your Squad Role</h3>
+                         <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Choisissez votre rôle</h3>
                          <div className="grid grid-cols-2 gap-4">
                             <RoleBtn 
                               active={formData.role === 'PLAYER'} 
                               onClick={() => setFormData({...formData, role: 'PLAYER'})}
                               icon={<Users size={28} />}
-                              label="Player"
-                              desc="Join match calls"
+                              label="Joueur"
+                              desc="Rejoindre les matchs"
                             />
                             <RoleBtn 
                               active={formData.role === 'COACH'} 
                               onClick={() => setFormData({...formData, role: 'COACH'})}
                               icon={<ShieldCheck size={28} />}
-                              label="Coach"
-                              desc="Tactical Admin"
+                              label="Entraîneur"
+                              desc="Gestion Tactique"
                             />
                          </div>
                       </div>
@@ -326,7 +326,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                           disabled={loading}
                           className="btn-elite w-full h-16 text-xl"
                         >
-                          {loading ? 'Processing...' : 'Deploy Profile'}
+                          {loading ? 'Traitement...' : 'Déployer Profil'}
                           {!loading && <ArrowRight size={24} />}
                         </button>
                         <button 
@@ -334,13 +334,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                           onClick={() => setStep(1)}
                           className="w-full py-2 text-[10px] font-bold text-white/40 uppercase tracking-widest hover:text-white transition-colors"
                         >
-                          Back to Profile
+                          Retour au Profil
                         </button>
                       </div>
                    </motion.div>
                  )}
 
-                 {mode === 'login' && (
+                  {mode === 'login' && (
                    <motion.div 
                     key="login"
                     initial={{ opacity: 0 }}
@@ -349,14 +349,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                    >
                       <div className="space-y-4">
                         <InputField 
-                          label="SQUAD ACCESS EMAIL" 
+                          label="EMAIL D'ACCÈS" 
                           placeholder="DEMO@SQUAD7.PRO" 
                           type="email" 
                           value={email}
                           onChange={setEmail}
                         />
                         <InputField 
-                          label="PASSWORD" 
+                          label="MOT DE PASSE" 
                           placeholder="••••••••" 
                           type="password" 
                           value={password}
@@ -369,13 +369,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                         disabled={loading}
                         className="btn-elite w-full h-16 text-xl"
                       >
-                        {loading ? 'Authorizing...' : 'Authorize Access'}
+                        {loading ? 'Autorisation...' : 'Autoriser l\'accès'}
                       </button>
 
                       <div className="flex flex-col items-center gap-6 pt-2 opacity-40">
                          <div className="flex items-center gap-4 w-full">
                             <div className="h-px flex-1 bg-white/20" />
-                            <span className="text-[8px] font-bold uppercase tracking-widest">Secured Access</span>
+                            <span className="text-[8px] font-bold uppercase tracking-widest">Accès Sécurisé</span>
                             <div className="h-px flex-1 bg-white/20" />
                          </div>
                       </div>
@@ -386,7 +386,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
         </div>
 
         <p className="text-center text-[9px] text-white/30 uppercase tracking-[0.2em]">
-           By joining you agree to Tactical Standards & Squad Code of Conduct
+           En rejoignant, vous acceptez les standards tactiques et le code de conduite du Squad
         </p>
       </motion.div>
     </div>

@@ -1,6 +1,6 @@
 {
   "name": "VETERANS JAWHARA",
-  "description": "The ultimate tactical hub for the Veterans Jawhara football elite. Manage your roster, coordinate matchdays, and track legendary performance with a pro-tier sports interface.",
+  "description": "Le hub tactique ultime pour l'élite du football Veterans Jawhara. Gérez votre effectif, coordonnez vos matchs et suivez vos performances avec une interface sportive professionnelle.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

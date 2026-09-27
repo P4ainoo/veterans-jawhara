@@ -13,7 +13,7 @@ export function getFormationCoordinates(formationStr: string): FormationSlot[] {
   const slots: FormationSlot[] = [];
 
   // GK is always fixed at bottom
-  slots.push({ id: 'gk', label: 'GK', x: 50, y: 85 });
+  slots.push({ id: 'gk', label: 'G', x: 50, y: 85 });
 
   const rows = formationStr.split('-').map(Number);
   const rowCount = rows.length;
@@ -38,14 +38,14 @@ export function getFormationCoordinates(formationStr: string): FormationSlot[] {
       const x = xStart + i * xStep;
       let label = 'POS';
       
-      if (rowIndex === 0) label = 'ST';
+      if (rowIndex === 0) label = 'ATT';
       else if (rowIndex === rowCount - 1) {
-        if (playersInRow === 1) label = 'CB';
-        else if (i === 0) label = 'LB';
-        else if (i === playersInRow - 1) label = 'RB';
-        else label = 'CB';
+        if (playersInRow === 1) label = 'DC';
+        else if (i === 0) label = 'DG';
+        else if (i === playersInRow - 1) label = 'DD';
+        else label = 'DC';
       } else {
-        label = 'MID';
+        label = 'MIL';
       }
 
       slots.push({

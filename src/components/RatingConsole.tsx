@@ -95,7 +95,7 @@ export const RatingConsole: React.FC<RatingConsoleProps> = ({ eventId, onClose }
       onClose();
     } catch (error) {
       console.error('Rating Submission Error:', error);
-      alert("Failed to finalize mission. Tactical error encountered.");
+      alert("Échec de la finalisation du match. Erreur tactique rencontrée.");
     } finally {
       setLoading(false);
     }
@@ -115,9 +115,9 @@ export const RatingConsole: React.FC<RatingConsoleProps> = ({ eventId, onClose }
       >
         <div className="flex justify-between items-start mb-6">
            <div>
-              <h2 className="text-2xl font-bold font-headline uppercase tracking-tight">Mission Debriefing</h2>
+              <h2 className="text-2xl font-bold font-headline uppercase tracking-tight">Rapport de Match</h2>
               <p className="text-xs text-on-surface-variant uppercase font-bold tracking-widest mt-1">
-                Log Combat Performance for {event?.opponent || 'Squad Drills'}
+                Saisir les performances pour {event?.opponent || 'Entraînement'}
               </p>
            </div>
            <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
@@ -143,7 +143,7 @@ export const RatingConsole: React.FC<RatingConsoleProps> = ({ eventId, onClose }
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mr-2">Tactical Rating</span>
+                      <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mr-2">Performance Rating</span>
                       <div className="flex items-center gap-1 bg-black/40 rounded-xl p-1 px-3">
                          <button onClick={() => updateStat(player.uid, 'rating', -1)} className="text-white/40 hover:text-white transition-colors">-</button>
                          <span className="w-6 text-center text-xs font-black text-primary">{playerStats[player.uid]?.rating || 5}</span>
@@ -155,28 +155,28 @@ export const RatingConsole: React.FC<RatingConsoleProps> = ({ eventId, onClose }
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                      <StatControl 
                         icon={<Trophy size={14} className="text-[#FFD700]" />} 
-                        label="Goals" 
+                        label="Buts" 
                         value={playerStats[player.uid]?.goals || 0}
                         onInc={() => updateStat(player.uid, 'goals', 1)}
                         onDec={() => updateStat(player.uid, 'goals', -1)}
                      />
                      <StatControl 
                         icon={<Footprints size={14} className="text-[#00E5FF]" />} 
-                        label="Assists" 
+                        label="Passes" 
                         value={playerStats[player.uid]?.assists || 0}
                         onInc={() => updateStat(player.uid, 'assists', 1)}
                         onDec={() => updateStat(player.uid, 'assists', -1)}
                      />
                      <StatControl 
                         icon={<AlertCircle size={14} className="text-[#FFCC00]" />} 
-                        label="Yellows" 
+                        label="Jaunes" 
                         value={playerStats[player.uid]?.yellowCards || 0}
                         onInc={() => updateStat(player.uid, 'yellowCards', 1)}
                         onDec={() => updateStat(player.uid, 'yellowCards', -1)}
                      />
                      <StatControl 
                         icon={<ShieldAlert size={14} className="text-red-500" />} 
-                        label="Reds" 
+                        label="Rouges" 
                         value={playerStats[player.uid]?.redCards || 0}
                         onInc={() => updateStat(player.uid, 'redCards', 1)}
                         onDec={() => updateStat(player.uid, 'redCards', -1)}
@@ -192,14 +192,14 @@ export const RatingConsole: React.FC<RatingConsoleProps> = ({ eventId, onClose }
             onClick={onClose}
             disabled={loading}
             className="flex-1 h-14 rounded-2xl bg-white/5 text-on-surface-variant font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all"
-           >Cancel</button>
+           >Annuler</button>
            <button 
             onClick={handleSubmit}
             disabled={loading || participants.length === 0}
             className="flex-1 h-14 rounded-2xl bg-primary text-black font-bold font-headline text-sm uppercase tracking-widest shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
            >
               {loading && <Loader2 className="animate-spin" size={18} />}
-              {loading ? 'Finalizing...' : 'Close Mission'}
+              {loading ? 'Finalisation...' : 'Enregistrer le Rapport'}
            </button>
         </div>
       </motion.div>
