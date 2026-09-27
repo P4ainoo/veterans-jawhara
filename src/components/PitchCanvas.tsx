@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  DndContext, 
-  DragEndEvent, 
-  useDraggable, 
-  useDroppable,
-  DragOverlay,
-  defaultDropAnimationSideEffects
-} from '@dnd-kit/core';
 import { useSquadStore, UserProfile } from '../store/useSquadStore';
 import { getFormationCoordinates } from '../lib/formation-math';
 import { cn } from '../lib/utils';
 import { PlayerCard } from './PlayerCard';
-import { Users, PlusCircle, CheckCircle2 } from 'lucide-react';
+import { Users, PlusCircle, CheckCircle2, X } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 
@@ -36,7 +28,7 @@ export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = fa
   const pitchAssignments = event?.pitchAssignments || {};
   const benchAssignments = event?.benchAssignments || [];
   
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [rsvpUserIds, setRsvpUserIds] = useState<string[]>([]);
 
   // Fetch RSVPs for this event
@@ -62,43 +54,81 @@ export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = fa
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    
-    if (!over) return;
+  const handleSlotClick = (slotId: string) => {
+    if (readOnly) return;
 
-    const userId = active.id as string;
-    const overId = over.id as string;
+    if (selectedPlayerId) {
+      // Move selected player to this slot
+      const newPitch = { ...pitchAssignments };
+      let newBench = [...benchAssignments];
+
+      // Remove from everywhere else
+      Object.keys(newPitch).forEach(k => {
+        if (newPitch[k] === selectedPlayerId) delete newPitch[k];
+      });
+      newBench = newBench.filter(id => id !== selectedPlayerId);
+
+      // If slot was occupied, move displaced player to bench
+      const displacedUser = newPitch[slotId];
+      if (displacedUser && displacedUser !== selectedPlayerId) {
+        newBench.push(displacedUser);
+      }
+
+      newPitch[slotId] = selectedPlayerId;
+      updateLineup(eventId, { pitch: newPitch, bench: newBench });
+      setSelectedPlayerId(null);
+    } else {
+      // If clicking an occupied slot with no selection, select that player
+      const occupantId = pitchAssignments[slotId];
+      if (occupantId) {
+        setSelectedPlayerId(occupantId);
+      }
+    }
+  };
+
+  const handleBenchClick = () => {
+    if (readOnly || !selectedPlayerId) return;
 
     const newPitch = { ...pitchAssignments };
     let newBench = [...benchAssignments];
 
-    // Remove user from any other slot first
+    // Remove from pitch if they were there
     Object.keys(newPitch).forEach(k => {
-      if (newPitch[k] === userId) delete newPitch[k];
+      if (newPitch[k] === selectedPlayerId) delete newPitch[k];
     });
-    // Remove from bench
-    newBench = newBench.filter(id => id !== userId);
 
-    // Case 1: Dropped on a pitch slot
-    if (overId.startsWith('slot-') || overId === 'gk') {
-      const displacedUser = newPitch[overId];
-      if (displacedUser) {
-        newBench.push(displacedUser);
-      }
-      newPitch[overId] = userId;
-    } 
-    // Case 2: Dropped on bench
-    else if (overId === 'bench-container') {
-      if (!newBench.includes(userId)) newBench.push(userId);
-    }
-    // Case 3: Dropped on "Return to Roster" (the drawer zone)
-    else if (overId === 'roster-drawer-zone') {
-      // Already removed from pitch and bench by logic above
+    // Add to bench if not already there
+    if (!newBench.includes(selectedPlayerId)) {
+      newBench.push(selectedPlayerId);
     }
 
     updateLineup(eventId, { pitch: newPitch, bench: newBench });
+    setSelectedPlayerId(null);
+  };
+
+  const handleRosterClick = (userId: string) => {
+    if (readOnly) return;
+    
+    if (selectedPlayerId === userId) {
+      setSelectedPlayerId(null);
+    } else {
+      setSelectedPlayerId(userId);
+    }
+  };
+
+  const handleRemoveFromLineup = (userId: string) => {
+    if (readOnly) return;
+
+    const newPitch = { ...pitchAssignments };
+    let newBench = [...benchAssignments];
+
+    Object.keys(newPitch).forEach(k => {
+      if (newPitch[k] === userId) delete newPitch[k];
+    });
+    newBench = newBench.filter(id => id !== userId);
+
+    updateLineup(eventId, { pitch: newPitch, bench: newBench });
+    if (selectedPlayerId === userId) setSelectedPlayerId(null);
   };
 
   const availablePlayers = roster.filter(u => 
@@ -108,114 +138,116 @@ export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = fa
   );
 
   return (
-    <DndContext 
-      onDragStart={({ active }) => setActiveId(active.id as string)}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex flex-col gap-10">
-        {!readOnly && (
-          <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-2">
-            {['3-2-1', '2-3-1', '3-1-2', '2-2-2', '1-3-2'].map(f => (
-              <button
-                key={f}
-                onClick={() => updateLineup(eventId, { formation: f })}
-                className={cn(
-                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all shrink-0",
-                  formation === f 
-                    ? "bg-primary text-black border-primary shadow-elite" 
-                    : "bg-white/5 text-white/40 border-white/5 hover:border-white/20"
-                )}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        )}
+    <div className="flex flex-col gap-10">
+      {!readOnly && (
+        <div className="flex items-center justify-between">
+           <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-2">
+             {['3-2-1', '2-3-1', '3-1-2', '2-2-2', '1-3-2'].map(f => (
+               <button
+                 key={f}
+                 onClick={() => updateLineup(eventId, { formation: f })}
+                 className={cn(
+                   "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all shrink-0",
+                   formation === f 
+                     ? "bg-primary text-black border-primary shadow-elite" 
+                     : "bg-white/5 text-white/40 border-white/5 hover:border-white/20"
+                 )}
+               >
+                 {f}
+               </button>
+             ))}
+           </div>
+           {selectedPlayerId && (
+             <button 
+              onClick={() => setSelectedPlayerId(null)}
+              className="bg-red-500/10 text-red-500 px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest border border-red-500/20 flex items-center gap-2"
+             >
+                <X size={12} /> Annuler Sélection
+             </button>
+           )}
+        </div>
+      )}
 
-        <div className="relative w-full aspect-[4/5.2] rounded-[3rem] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/5 bg-[#05110B]">
-          <div className="absolute inset-0 z-0">
-             <div className="absolute inset-0 bg-gradient-to-b from-[#0A2318] to-[#05110B]" />
-             <div className="absolute inset-6 border-2 border-primary/20 rounded-2xl pointer-events-none">
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-24 border-t-2 border-x-2 border-primary/10" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-b-2 border-x-2 border-primary/10" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-primary/10 rounded-full" />
-                <div className="absolute top-1/2 left-0 right-0 h-px bg-primary/10" />
-             </div>
-             <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
-          </div>
-
-          <div className="relative z-10 w-full h-full p-8">
-            {slots.map(slot => {
-              const userId = pitchAssignments[slot.id];
-              const player = roster.find(u => u.uid === userId);
-              const stats = userId && matchStats ? matchStats[userId] : undefined;
-              
-              return (
-                <PitchSlot 
-                  key={slot.id} 
-                  slot={slot} 
-                  assignedUser={player}
-                  readOnly={readOnly}
-                  matchRating={stats?.rating}
-                />
-              );
-            })}
-          </div>
+      <div className="relative w-full aspect-[4/5.2] rounded-[3rem] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/5 bg-[#05110B]">
+        <div className="absolute inset-0 z-0">
+           <div className="absolute inset-0 bg-gradient-to-b from-[#0A2318] to-[#05110B]" />
+           <div className="absolute inset-6 border-2 border-primary/20 rounded-2xl pointer-events-none">
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-24 border-t-2 border-x-2 border-primary/10" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-b-2 border-x-2 border-primary/10" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-primary/10 rounded-full" />
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-primary/10" />
+           </div>
+           <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
         </div>
 
-        <div className="space-y-6">
-           <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Remplaçants & Réserves</h4>
-              <span className="text-[9px] font-black text-secondary uppercase tracking-widest bg-secondary/10 px-2 py-0.5 rounded-lg border border-secondary/20">Capacité Illimitée</span>
-           </div>
-           
-           <BenchContainer 
-            players={roster.filter(u => benchAssignments.includes(u.uid))}
-            readOnly={readOnly}
-            matchStats={matchStats}
-           />
-           
-           {!readOnly && (
-             <RosterDrawer 
-              players={availablePlayers} 
-              rsvpCount={rsvpUserIds.length} 
-             />
-           )}
+        <div className="relative z-10 w-full h-full p-8">
+          {slots.map(slot => {
+            const userId = pitchAssignments[slot.id];
+            const player = roster.find(u => u.uid === userId);
+            const stats = userId && matchStats ? matchStats[userId] : undefined;
+            
+            return (
+              <PitchSlot 
+                key={slot.id} 
+                slot={slot} 
+                assignedUser={player}
+                readOnly={readOnly}
+                matchRating={stats?.rating}
+                isSelected={selectedPlayerId === userId}
+                onSelect={() => handleSlotClick(slot.id)}
+              />
+            );
+          })}
         </div>
       </div>
 
-      <DragOverlay dropAnimation={{
-          sideEffects: defaultDropAnimationSideEffects({
-            styles: {
-              active: {
-                opacity: '0.5',
-              },
-            },
-          }),
-        }}>
-        {activeId ? (
-          <div className="scale-110 pointer-events-none">
-             <PlayerCard player={roster.find(u => u.uid === activeId)!} size="tactical" />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+      <div className="space-y-6">
+         <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Remplaçants & Réserves</h4>
+            <span className="text-[9px] font-black text-secondary uppercase tracking-widest bg-secondary/10 px-2 py-0.5 rounded-lg border border-secondary/20">Capacité Illimitée</span>
+         </div>
+         
+         <BenchContainer 
+          players={roster.filter(u => benchAssignments.includes(u.uid))}
+          readOnly={readOnly}
+          matchStats={matchStats}
+          selectedPlayerId={selectedPlayerId}
+          onBenchClick={handleBenchClick}
+          onPlayerClick={(uid: string) => {
+            if (selectedPlayerId) {
+               // Move selected player to bench (already there or swap)
+               handleBenchClick();
+            } else {
+               setSelectedPlayerId(uid);
+            }
+          }}
+         />
+         
+         {!readOnly && (
+           <RosterDrawer 
+            players={availablePlayers} 
+            rsvpCount={rsvpUserIds.length} 
+            selectedPlayerId={selectedPlayerId}
+            onPlayerClick={handleRosterClick}
+            onRemovePlayer={handleRemoveFromLineup}
+           />
+         )}
+      </div>
+    </div>
   );
 };
 
-function RosterDrawer({ players, rsvpCount }: { players: UserProfile[], rsvpCount: number }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: 'roster-drawer-zone',
-  });
+interface RosterDrawerProps {
+  players: UserProfile[];
+  rsvpCount: number;
+  selectedPlayerId: string | null;
+  onPlayerClick: (uid: string) => void;
+  onRemovePlayer: (uid: string) => void;
+}
 
+function RosterDrawer({ players, rsvpCount, selectedPlayerId, onPlayerClick }: RosterDrawerProps) {
   return (
-    <div 
-      ref={setNodeRef}
-      className={cn(
-        "glass-card rounded-[2.5rem] p-6 shadow-xl space-y-6 relative overflow-hidden transition-all duration-300",
-        isOver && "bg-primary/10 border-primary/20 scale-[1.02]"
-      )}
-    >
+    <div className="glass-card rounded-[2.5rem] p-6 shadow-xl space-y-6 relative overflow-hidden transition-all duration-300">
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
       
       <div className="flex items-center justify-between relative z-10">
@@ -232,47 +264,54 @@ function RosterDrawer({ players, rsvpCount }: { players: UserProfile[], rsvpCoun
               <span className="text-[10px] font-black uppercase tracking-widest">Aucun joueur disponible</span>
            </div>
          ) : (
-           players.map(user => (
-             <DraggablePlayer key={user.uid} user={user} />
+           players.map((user: UserProfile) => (
+             <div 
+              key={user.uid} 
+              onClick={() => onPlayerClick(user.uid)}
+              className={cn(
+                "cursor-pointer transition-all",
+                selectedPlayerId === user.uid ? "scale-110 drop-shadow-[0_0_15px_rgba(0,255,102,0.4)]" : "hover:scale-105"
+              )}
+             >
+                <PlayerCard player={user} size="tactical" className={selectedPlayerId === user.uid ? "border-primary" : ""} />
+             </div>
            ))
          )}
       </div>
-      
-      {isOver && (
-        <div className="absolute inset-0 bg-primary/5 backdrop-blur-sm flex items-center justify-center z-50 rounded-[2.5rem]">
-           <span className="text-xs font-black uppercase tracking-[0.3em] text-primary animate-pulse">Relâcher pour retirer</span>
-        </div>
-      )}
     </div>
   );
 }
 
-function PitchSlot({ slot, assignedUser, readOnly, matchRating }: { slot: any, assignedUser?: UserProfile, readOnly: boolean, matchRating?: number }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: slot.id,
-    disabled: readOnly
-  });
+interface PitchSlotProps {
+  slot: any;
+  assignedUser?: UserProfile;
+  readOnly: boolean;
+  matchRating?: number;
+  isSelected: boolean;
+  onSelect: () => void;
+}
 
+function PitchSlot({ slot, assignedUser, matchRating, isSelected, onSelect }: PitchSlotProps) {
   return (
     <div 
-      ref={setNodeRef}
       className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center transition-all z-20",
-        isOver && "scale-125"
+        "absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center transition-all z-20 cursor-pointer",
+        isSelected && "scale-125"
       )}
       style={{ 
         left: `${slot.x}%`, 
         top: `${slot.y}%`,
-        padding: '20px' // Increased hit area
+        padding: '20px'
       }}
+      onClick={onSelect}
     >
       <div className={cn(
         "w-12 h-12 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center relative transition-all duration-300",
         assignedUser ? "border-transparent" : "bg-black/40",
-        isOver && "border-primary/50 bg-primary/5"
+        isSelected && "border-primary shadow-[0_0_15px_rgba(0,255,102,0.4)]"
       )}>
         {assignedUser ? (
-          <DraggablePlayer user={assignedUser} readOnly={readOnly} matchRating={matchRating} />
+          <PlayerCard player={assignedUser} size="tactical" matchRating={matchRating} />
         ) : (
           <span className="text-[8px] font-bold text-white/20 uppercase">{slot.label}</span>
         )}
@@ -282,58 +321,46 @@ function PitchSlot({ slot, assignedUser, readOnly, matchRating }: { slot: any, a
   );
 }
 
-function BenchContainer({ players, readOnly, matchStats }: { players: UserProfile[], readOnly: boolean, matchStats?: Record<string, any> }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: 'bench-container',
-    disabled: readOnly
-  });
+interface BenchContainerProps {
+  players: UserProfile[];
+  readOnly: boolean;
+  matchStats?: Record<string, any>;
+  selectedPlayerId: string | null;
+  onBenchClick: () => void;
+  onPlayerClick: (uid: string) => void;
+}
 
+function BenchContainer({ players, matchStats, selectedPlayerId, onBenchClick, onPlayerClick }: BenchContainerProps) {
   return (
     <div 
-      ref={setNodeRef}
+      onClick={onBenchClick}
       className={cn(
-        "min-h-[120px] bg-white/5 rounded-3xl p-6 border border-white/5 flex flex-wrap gap-4 transition-colors",
-        isOver && "bg-[#00E5FF]/5 border-[#00E5FF]/20"
+        "min-h-[120px] bg-white/5 rounded-3xl p-6 border border-white/5 flex flex-wrap gap-4 transition-colors cursor-pointer",
+        selectedPlayerId && "hover:bg-primary/5 hover:border-primary/20"
       )}
     >
       {players.length === 0 ? (
         <div className="w-full flex flex-col items-center justify-center opacity-20 py-4">
            <PlusCircle size={24} className="mb-2" />
-           <span className="text-[10px] font-bold uppercase tracking-widest">Glisser les joueurs ici</span>
+           <span className="text-[10px] font-bold uppercase tracking-widest">Cliquez pour ajouter ici</span>
         </div>
       ) : (
-        players.map((p) => (
-          <DraggablePlayer key={p.uid} user={p} readOnly={readOnly} matchRating={matchStats?.[p.uid]?.rating} />
+        players.map((p: UserProfile) => (
+          <div 
+            key={p.uid} 
+            onClick={(e) => {
+              e.stopPropagation();
+              onPlayerClick(p.uid);
+            }}
+            className={cn(
+              "transition-all cursor-pointer",
+              selectedPlayerId === p.uid ? "scale-110 drop-shadow-[0_0_15px_rgba(0,255,102,0.4)]" : "hover:scale-105"
+            )}
+          >
+            <PlayerCard player={p} size="tactical" matchRating={matchStats?.[p.uid]?.rating} />
+          </div>
         ))
       )}
-    </div>
-  );
-}
-
-function DraggablePlayer({ user, readOnly = false, matchRating }: { user: UserProfile, readOnly?: boolean, matchRating?: number }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: user.uid,
-    disabled: readOnly
-  });
-
-  // When dragging with an overlay, we don't want to transform the source element
-  // instead we can just dim it or hide it.
-  const style = {
-    opacity: isDragging ? 0.3 : 1,
-    cursor: readOnly ? 'default' : 'grab',
-  };
-
-  return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
-      {...(readOnly ? {} : { ...listeners, ...attributes })}
-      className={cn(
-        "transition-transform",
-        !readOnly && "hover:scale-110"
-      )}
-    >
-      <PlayerCard player={user} size="tactical" matchRating={matchRating} />
     </div>
   );
 }
