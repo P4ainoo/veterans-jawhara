@@ -194,8 +194,8 @@ export const PitchCanvas: React.FC<PitchCanvasProps> = ({ eventId, readOnly = fa
           }),
         }}>
         {activeId ? (
-          <div className="w-16 h-22 scale-110 pointer-events-none">
-             <PlayerCard player={roster.find(u => u.uid === activeId)!} size="sm" />
+          <div className="scale-110 pointer-events-none">
+             <PlayerCard player={roster.find(u => u.uid === activeId)!} size="tactical" />
           </div>
         ) : null}
       </DragOverlay>
@@ -257,14 +257,19 @@ function PitchSlot({ slot, assignedUser, readOnly, matchRating }: { slot: any, a
     <div 
       ref={setNodeRef}
       className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center transition-all",
-        isOver && "scale-110 drop-shadow-[0_0_12px_#00FF66]"
+        "absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center transition-all z-20",
+        isOver && "scale-125"
       )}
-      style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+      style={{ 
+        left: `${slot.x}%`, 
+        top: `${slot.y}%`,
+        padding: '20px' // Increased hit area
+      }}
     >
       <div className={cn(
         "w-12 h-12 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center relative transition-all duration-300",
-        assignedUser ? "border-transparent" : "bg-black/20"
+        assignedUser ? "border-transparent" : "bg-black/40",
+        isOver && "border-primary/50 bg-primary/5"
       )}>
         {assignedUser ? (
           <DraggablePlayer user={assignedUser} readOnly={readOnly} matchRating={matchRating} />
@@ -306,14 +311,17 @@ function BenchContainer({ players, readOnly, matchStats }: { players: UserProfil
 }
 
 function DraggablePlayer({ user, readOnly = false, matchRating }: { user: UserProfile, readOnly?: boolean, matchRating?: number }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: user.uid,
     disabled: readOnly
   });
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+  // When dragging with an overlay, we don't want to transform the source element
+  // instead we can just dim it or hide it.
+  const style = {
+    opacity: isDragging ? 0.3 : 1,
+    cursor: readOnly ? 'default' : 'grab',
+  };
 
   return (
     <div 
@@ -321,11 +329,11 @@ function DraggablePlayer({ user, readOnly = false, matchRating }: { user: UserPr
       style={style} 
       {...(readOnly ? {} : { ...listeners, ...attributes })}
       className={cn(
-        "w-16 h-22 shrink-0 transition-transform",
-        !readOnly && "cursor-grab active:cursor-grabbing hover:scale-105"
+        "transition-transform",
+        !readOnly && "hover:scale-110"
       )}
     >
-      <PlayerCard player={user} size="sm" matchRating={matchRating} />
+      <PlayerCard player={user} size="tactical" matchRating={matchRating} />
     </div>
   );
 }

@@ -118,8 +118,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError("File too large. Max 2MB.");
+    if (file.size > 800 * 1024) {
+      setError("Intel too large. Max 800KB for tactical photos.");
       return;
     }
 

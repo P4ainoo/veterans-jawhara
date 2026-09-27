@@ -154,10 +154,16 @@ export default function App() {
     if (!currentUser) return;
     setIsSavingProfile(true);
     try {
+      // Ensure we use the correct document ID (which is the uid)
       await updateDoc(doc(db, 'users', currentUser.uid), data);
       setCurrentUser({ ...currentUser, ...data });
+      // If it's not a photo update, show generic success
+      if (!data.avatarUrl) {
+        alert("Profile Intel Synchronized.");
+      }
     } catch (error) {
       console.error('Profile Update Error:', error);
+      alert("Failed to synchronize intel. Check your uplink.");
     } finally {
       setIsSavingProfile(false);
     }
@@ -167,8 +173,8 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert("File too large. Maximum size is 2MB for tactical intel.");
+    if (file.size > 800 * 1024) {
+      alert("Intel too large. Max 800KB for tactical photos (to fit squad encrypted storage).");
       return;
     }
 
@@ -176,6 +182,7 @@ export default function App() {
     reader.onloadend = async () => {
       const base64String = reader.result as string;
       await updateProfile({ avatarUrl: base64String });
+      alert("Tactical Intel Updated: Photo saved to squad vault.");
     };
     reader.readAsDataURL(file);
   };
@@ -451,8 +458,8 @@ export default function App() {
                  </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                 <div className="lg:col-span-2 space-y-10">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                 <div className="lg:col-span-8 space-y-10">
                     {activeEvent?.type === 'MATCH' && (
                        <div className="space-y-6">
                           <div className="flex items-center justify-between border-b border-white/5 pb-3">
@@ -474,35 +481,36 @@ export default function App() {
 
                     <div className="glass-card rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden">
                         {activeEvent?.isCompleted && activeEvent?.matchStats && (
-                          <div className="glass-card rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden mb-8">
+                          <div className="glass-card rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden mb-8 border border-white/5">
                              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-6">Match Combat Stats</h4>
-                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {Object.entries(activeEvent.matchStats).map(([uid, stats]: [string, any]) => {
                                    const player = roster.find(p => p.uid === uid);
-                                   if (!player || (stats.goals === 0 && stats.assists === 0)) return null;
+                                   if (!player) return null;
                                    return (
-                                      <div key={uid} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5">
+                                      <div key={uid} className="flex items-center justify-between p-2.5 bg-white/5 rounded-xl border border-white/5 group hover:bg-white/10 transition-all">
                                          <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10">
+                                            <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 group-hover:border-primary/50 transition-colors">
                                                <img src={player.avatarUrl} className="w-full h-full object-cover" alt={player.lastName} />
                                             </div>
                                             <div className="flex flex-col">
-                                               <span className="text-[10px] font-black uppercase tracking-tight">{player.lastName}</span>
+                                               <span className="text-[10px] font-black uppercase tracking-tight text-white/90">{player.lastName}</span>
                                             </div>
                                          </div>
-                                         <div className="flex items-center gap-3">
-                                            {stats.goals > 0 && (
-                                               <div className="flex items-center gap-1">
-                                                  <Trophy size={12} className="text-[#FFD700]" />
-                                                  <span className="text-[10px] font-black">{stats.goals}</span>
-                                               </div>
-                                            )}
-                                            {stats.assists > 0 && (
-                                               <div className="flex items-center gap-1">
-                                                  <Footprints size={12} className="text-[#00E5FF]" />
-                                                  <span className="text-[10px] font-black">{stats.assists}</span>
-                                               </div>
-                                            )}
+                                         <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-1">
+                                               {stats.goals > 0 && Array.from({length: stats.goals}).map((_, i) => (
+                                                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_5px_#00FF66]" />
+                                               ))}
+                                            </div>
+                                            <div className={cn(
+                                               "px-2 py-0.5 rounded-md text-[10px] font-black text-white shadow-lg",
+                                               stats.rating >= 8.5 ? "bg-secondary" : 
+                                               stats.rating >= 7.0 ? "bg-primary" : 
+                                               "bg-orange-500"
+                                            )}>
+                                               {stats.rating.toFixed(1)}
+                                            </div>
                                          </div>
                                       </div>
                                    );
@@ -537,7 +545,7 @@ export default function App() {
                     </div>
                  </div>
 
-                 <div className="space-y-8">
+                 <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-8">
                     <div className="glass-card rounded-[2.5rem] p-6 shadow-xl flex flex-col gap-6 relative overflow-hidden">
                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl" />
                        

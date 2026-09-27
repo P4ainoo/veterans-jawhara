@@ -6,7 +6,7 @@ import { Star } from 'lucide-react';
 
 interface PlayerCardProps {
   player: UserProfile;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'tactical';
   className?: string;
   matchRating?: number;
 }
@@ -14,6 +14,31 @@ interface PlayerCardProps {
 export const PlayerCard: React.FC<PlayerCardProps> = ({ player, size = 'md', className, matchRating }) => {
   const isGold = (player.avgRating || 0) >= 9.0;
   const isPurple = (player.avgRating || 0) >= 8.5 && (player.avgRating || 0) < 9.0;
+
+  if (size === 'tactical') {
+    return (
+      <div className={cn("flex flex-col items-center gap-1 group", className)}>
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-2 border-white/10 overflow-hidden shadow-2xl group-hover:border-primary transition-all">
+            <img src={player.avatarUrl} className="w-full h-full object-cover" alt={player.lastName} />
+          </div>
+          {matchRating !== undefined && (
+            <div className={cn(
+              "absolute -top-1 -right-1 z-20 px-1.5 py-0.5 rounded-md text-[8px] font-black text-white shadow-lg",
+              matchRating >= 8.5 ? "bg-secondary" : 
+              matchRating >= 7.0 ? "bg-primary" : 
+              "bg-orange-500"
+            )}>
+              {matchRating.toFixed(1)}
+            </div>
+          )}
+        </div>
+        <span className="text-[9px] font-black uppercase tracking-tighter text-white/90 drop-shadow-md truncate w-16 text-center">
+          {player.lastName}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(
