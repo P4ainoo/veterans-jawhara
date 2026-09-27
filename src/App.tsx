@@ -34,6 +34,7 @@ import { PitchCanvas } from './components/PitchCanvas';
 import { PlayerCard } from './components/PlayerCard';
 import { RatingConsole } from './components/RatingConsole';
 import { useNotifications } from './hooks/useNotifications';
+import { compressImage } from './lib/image-utils';
 import { auth, db } from './lib/firebase';
 import { 
   onSnapshot, 
@@ -183,16 +184,18 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 800 * 1024) {
-      alert("Fichier trop volumineux. Max 800 Ko pour les photos.");
-      return;
-    }
-
     const reader = new FileReader();
     reader.onloadend = async () => {
-      const base64String = reader.result as string;
-      await updateProfile({ avatarUrl: base64String });
-      alert("Photo mise à jour : sauvegardée dans le coffre de l'équipe.");
+      try {
+        const base64String = reader.result as string;
+        // Compress the image before saving
+        const compressed = await compressImage(base64String);
+        await updateProfile({ avatarUrl: compressed });
+        alert("Photo mise à jour : sauvegardée dans le coffre de l'équipe.");
+      } catch (error) {
+        console.error("Compression error:", error);
+        alert("Erreur lors du traitement de l'image.");
+      }
     };
     reader.readAsDataURL(file);
   };

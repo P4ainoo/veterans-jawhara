@@ -16,6 +16,7 @@ import {
 import { cn } from '../lib/utils';
 import { UserProfile, useSquadStore } from '../store/useSquadStore';
 import { PWAInstallButton } from './PWAInstallButton';
+import { compressImage } from '../lib/image-utils';
 import { auth, db } from '../lib/firebase';
 import { 
   createUserWithEmailAndPassword, 
@@ -118,15 +119,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 800 * 1024) {
-      setError("Fichier trop volumineux. Max 800 Ko.");
-      return;
-    }
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setFormData({ ...formData, avatarUrl: base64String });
+    reader.onloadend = async () => {
+      try {
+        const base64String = reader.result as string;
+        const compressed = await compressImage(base64String);
+        setFormData({ ...formData, avatarUrl: compressed });
+      } catch (error) {
+        console.error("Compression error:", error);
+        setError("Erreur lors du traitement de l'image.");
+      }
     };
     reader.readAsDataURL(file);
   };
